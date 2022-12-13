@@ -1,0 +1,40 @@
+﻿@inject NavigationManager NavManager
+@inject ILocalStorageService LocalStorage
+@inject AuthenticationStateProvider AuthStateProvider
+
+
+    <AuthorizeView>
+        <Authorized>
+        <button @onclick="logout" class="btn bg-gradient btn-outline-danger"><b>Logout <i class="bi bi-box-arrow-in-left"></i></b></button>
+        </Authorized>
+    <NotAuthorized>
+        <button @onclick="login" class="btn bg-gradient btn-outline-success"><b>Login <i class="bi bi-box-arrow-in-left"></i></b></button>
+    </NotAuthorized>
+    </AuthorizeView>
+
+
+@code {
+    private void login()
+    {
+        NavManager.NavigateTo("/Login");
+    }
+    private async Task logout()
+    {
+        try
+        {
+            await LocalStorage.RemoveItem("user");
+            await AuthStateProvider.GetAuthenticationStateAsync();
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+                        StateHasChanged();
+            NavManager.NavigateTo("/");
+
+        }
+    }
+
+}

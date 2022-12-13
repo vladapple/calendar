@@ -1,0 +1,68 @@
+﻿@page "/Dashboard/EventMedias"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject HttpClient Http
+@attribute [Authorize(Roles = "admin")]
+
+<h3>EventMedias</h3>
+<a href="/Dashboard/Index">Back to dashboard</a>
+<div class="text-center">
+    <a href="/Dashboard/EventMediaAdd">Add Event Media</a>
+</div>
+<br>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Id</th>
+                        <th scope="col">Media Type</th>
+                        <th scope="col">Event Id</th>
+                        <th scope="col">Event Name</th>
+                        <th scope="col">Url</th>
+                        <th scope="col">Links</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var em in EventMediaList)
+                    {
+                        <tr>
+                            <td>@em.Id</td>
+                            <td>@em.Media</td>
+                            <td>@em.Event.Id</td>
+                            <td>@em.Event.EventName</td>
+                            <td><a href="@em.Url" target="_blank">@em.Url</a></td>
+                            <td>
+                                <a href="/Dashboard/EventMediaUpdate/@em.Id">Edit |</a>
+                                <a href="/Dashboard/EventMediaDelete/@em.Id"> Delete</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+@code
+{
+    private List<EventMedia>? EventMediaList { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            EventMediaList = await Http.GetFromJsonAsync<List<EventMedia>>("api/EventMedia");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+}

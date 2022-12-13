@@ -1,0 +1,45 @@
+﻿@using Frontend.Models;
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject HttpClient Http
+
+<div class="container-md m-4 row">
+    <div class="container">
+    <div class="mb-3 col-2">
+        <label class="form-label">Venue Category Name</label>
+        <input type="text" class="form-control" @bind="CatName">
+        <div id="emailHelp" class="form-text">Make sure it isnt on the list!</div>
+    </div>
+    <div class="mb-3 col-4">
+        <label class="form-label">Category Description</label>
+        <input type="text" class="form-control" @bind="CatDesc">
+    </div>
+
+    <button @onclick="PostVenueCategory">Post</button>
+    </div>
+</div>
+
+@code {
+    private string? CatName;
+    private String? CatDesc;
+    //user token
+    protected async Task PostVenueCategory()
+    {
+        var addVenCat = new VenueCategory
+            {
+                CategoryName = CatName,
+                Descr = CatDesc
+                //must be sent with token
+            };
+        using var response = await Http.PostAsJsonAsync("api/VenueCategories", addVenCat);
+        if (!response.IsSuccessStatusCode)
+        {
+            // set error message for display, log to console and return
+            var errorMessage = response.ReasonPhrase;
+            Console.WriteLine($"There was an error! {errorMessage}");
+            return;
+        }
+    }
+
+}

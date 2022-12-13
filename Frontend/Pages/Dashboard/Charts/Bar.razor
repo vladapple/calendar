@@ -1,0 +1,51 @@
+﻿@page "/Dashboard/Bar"
+@using Syncfusion.Blazor.Charts
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using System.Linq
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@attribute [Authorize(Roles = "admin")]
+
+<SfChart>
+    <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"></ChartPrimaryXAxis>
+    <ChartSeriesCollection>
+        <ChartSeries DataSource="@attendingInfo" XName="Event" YName="Going" Type="ChartSeriesType.Column">
+        </ChartSeries>
+    </ChartSeriesCollection>
+</SfChart>
+
+@code {
+    public class AttendingInfo
+    {
+        public string Event { get; set; }
+        public int Going { get; set; }
+    }
+
+    public List<AttendingInfo> attendingInfo = new List<AttendingInfo>();
+    public List<AttendingInfo> attendingInformation = new List<AttendingInfo>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var attendings = await Http.GetFromJsonAsync<List<Attending>>("api/Attending");
+
+        foreach (var a in attendings)
+        {
+            attendingInformation.Add(new AttendingInfo { Event = a.Event.EventName, Going = 1 });
+        }
+
+        var grouped = attendingInformation.GroupBy(a => a.Event)
+                         .Select(a => new
+                         {
+                             Event = a.Key,
+                             Going = a.Count()
+                         });
+        foreach (var a in grouped)
+        {
+            attendingInfo.Add(new AttendingInfo { Event = a.Event, Going = a.Going });
+        }
+
+    }
+}

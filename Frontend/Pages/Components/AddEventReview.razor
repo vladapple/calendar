@@ -1,0 +1,142 @@
+﻿@page "/Components/AddEventReview/{eventId:int}"
+
+@using System;
+@using System.Collections.Generic;
+@using System.Linq;
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Inputs
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@using System.Security.Claims
+@inject ILocalStorageService localStorage
+@inject AuthenticationStateProvider AuthService
+
+@if (alreadyExists)
+{
+    <h3>You have already reviewed this event</h3>
+    <br />
+    <a href="/">back home</a>
+}
+else
+{
+   <h3>Post a review for @selectedEvent.EventName</h3>
+<br />
+<div class="row">
+    <div class="col-md-6">
+        <EditForm Model="@er" OnValidSubmit="@PostEventReview">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            @*<div class="form-group">
+                <label class="control-label">
+                    How would you rate this event? (1-5)
+                    <InputNumber class="form-control" @bind-Value=@er.Rating />
+                </label>
+            </div><br>*@
+
+            <div class="form-group">
+                <label class="control-label">
+                    How would you rate this event? (1-5)
+                </label>
+                <SfSlider Min="1" Max="5" @bind-Value="@er.Rating">
+                    <SliderTooltip IsVisible="true" ShowOn="TooltipShowOn.Always" Format="" Placement="TooltipPlacement.Before"></SliderTooltip>
+                    <SliderTicks Placement="Placement.Before" Format="" ShowSmallTicks="true" LargeStep="1" SmallStep="1"></SliderTicks>
+                </SfSlider>
+            </div><br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    Leave a comment about your rating (2000 characters, optional)
+                    <InputTextArea class="form-control" @bind-Value=@er.Comment />
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                <button type="submit" class="btn btn-secondary">Post Review</button>
+            </div>
+            <span class="text-danger">@errorMessage</span>
+        </EditForm>
+    </div>
+</div> 
+}
+
+
+@code {
+
+    private EventReview? er = new EventReview();
+
+    [Parameter]
+    public int eventId { get; set; }
+    private Event? selectedEvent { get; set; }
+
+    private int userId { get; set; }
+    private User? currentUser { get; set; }
+
+    private int StarRating { get; set; }
+
+    private string? errorMessage;
+
+    private bool alreadyExists = false;
+    private AuthenticationState authState;
+
+    //private int rating { get; set; }
+    //private string comment { get; set; }
+    //private DateTime dateTime { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            authState = await AuthService.GetAuthenticationStateAsync();
+            var user = authState.User;
+            userId = int.Parse(user.FindFirst(c => c.Type == ClaimTypes.SerialNumber)?.Value);
+            currentUser = await Http.GetFromJsonAsync<User>($"api/Users/{userId}");
+            selectedEvent = await Http.GetFromJsonAsync<Event>($"api/Events/{eventId}");
+
+            var userReviews = await Http.GetFromJsonAsync<List<EventReview>>($"api/EventReviews/user/{userId}");
+            var review = userReviews.FirstOrDefault(r => r.Event.Id == eventId);
+            if(review != null)
+            {
+                alreadyExists = true;
+            }
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+
+    protected async Task PostEventReview()
+    {
+        try
+        {
+            er.DateTime = DateTime.UtcNow;
+            er.Event = await Http.GetFromJsonAsync<Event>($"api/Events/{eventId}");
+            er.User = await Http.GetFromJsonAsync<User>($"api/Users/{userId}");
+
+            if(er.Comment == "")
+            {
+                er.Comment = null;
+            }
+
+            var response = await Http.PostAsJsonAsync("api/EventReviews", er);
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = response.ReasonPhrase;
+                return;
+            }
+
+            NavManager.NavigateTo("/");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+
+    }
+}

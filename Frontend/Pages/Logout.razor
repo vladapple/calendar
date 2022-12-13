@@ -1,0 +1,32 @@
+﻿@page "/Logout"
+@inject ILocalStorageService localStorage
+@inject AuthenticationStateProvider AuthService
+@inject NavigationManager NavManager
+<div class="container" hidden=@loggedout>
+    <button @onclick="logout" class="btn-danger"><h1>Logout here</h1></button>
+</div>
+<div class="container" hidden=@hideGoodbye >
+    <h1>
+        Goodbye!
+    </h1>
+</div>
+@code {
+    private bool loggedout { get; set; } = false;
+    private bool hideGoodbye { get; set; } = true;
+    async Task logout()
+    {
+        try{
+            await localStorage.RemoveItem("user");
+            await AuthService.GetAuthenticationStateAsync();
+        }
+        catch(Exception ex)
+        {
+            throw ex;
+        }
+        finally
+        {
+            NavManager.NavigateTo("/");
+        }
+    }
+
+}

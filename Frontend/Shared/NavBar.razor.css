@@ -1,0 +1,105 @@
+﻿/** At Full Screen **/
+/*#nav_bg {
+    background: rgb(240, 240, 240, 0.84);
+    backdrop-filter: blur(6px);
+    height: 10vh;
+    display: flex;
+    justify-content: flex-end;
+}*/
+.top_bar_container{
+    display:flex;
+    justify-content:flex-end;
+    padding-top: 10px;
+}
+.dash:is(:hover), .dash:active, .dash:visited {
+    background-color: #1a1aff;
+    outline: #1a1aff;
+    border-color: #1a1aff;
+    color: white;
+}
+.dash {
+    background-color: transparent;
+    border-color: #1a1aff;
+    color: #1a1aff;
+}
+.sidebar {
+    height: 100%; /* 100% Full-height */
+    width: 0; /* 0 width - change this with JavaScript */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Stay on top */
+    top: 0;
+    left: 0;
+    background-color: #1a1aff; /* Black*/
+    overflow-x: hidden; /* Disable horizontal scroll */
+    padding-top: 60px; /* Place content 60px from the top */
+    transition: 0.5s; /* 0.5 second transition effect to slide in the sidebar */
+    padding: 10% 0% 10% 1%;
+}
+ul li {
+    display: inline-block;
+    list-style-type: none;
+    text-decoration: none;
+    float: left;
+    padding-left: .5rem;
+}
+ul{
+    list-style-type: none;
+}
+@media screen and (max-height: 450px) {
+    .sidebar {
+        padding-top: 15px;
+    }
+
+    .nav_btn {
+        font-size: 18px;
+    }
+}
+#main {
+    width:100%;
+    transition: margin-left 1s; /* If you want a transition effect */
+    padding: 0px 20px 0px 20px;
+}
+.close_btn {
+    position: absolute;
+    top: 0;
+    left: 25px;
+    font-size: 36px;
+    margin-right: 50px;
+}
+.nav_btn {
+    background: transparent;
+    border-radius: 50px;
+    margin-left: 2rem;
+    border: none;
+    color: #FFF;
+    font-size: 1.3rem;
+    padding: .5rem;
+    width: 10rem;
+    display: block;
+    transition: 0.3s;
+    padding-bottom:2rem;
+}
+
+    .nav_btn:is(:hover) {
+        background: #4d4dff;
+        border-radius: 15px;
+        border: none;
+        color: white;
+        font-size: 1.3rem;
+        padding: .5rem;
+    }
+
+    .nav_btn:hover {
+        transition: .2s ease-in-out;
+    }
+
+    .nav_btn:active {
+        background: transparent;
+        border-radius: 50px;
+        margin-left: 2rem;
+        border: 2px solid #000066;
+        color: #000066;
+        font-size: 1rem;
+        padding: .5rem;
+    }
+/** At Full Screen **/

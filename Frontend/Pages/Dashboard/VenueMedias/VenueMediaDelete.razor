@@ -1,0 +1,63 @@
+﻿@page "/Dashboard/VenueMediaDelete/{Id:int}"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Venue Media Delete</h3>
+<a href="/Dashboard/VenueMedias">Back to Venue Medias</a>
+<br />
+<div class="row">
+    <div class="col-md-4">
+            <p>
+                Id : @Id<br />
+                Venue Id: @vm.Venue.Id<br />
+                Venue Name: @vm.Venue.VenueName<br />
+                Url: <a href="@vm.Url" target="_blank">@vm.Url</a><br />
+            </p> 
+    </div>
+        <br />
+        <div class="form-group">
+            <input value="Delete Venue Media" class="btn btn-secondary" @onclick="DeleteVenueMedia" /><br /><br />
+            <span>@errorMessage</span>
+        </div>
+</div>
+
+@code
+{
+    private VenueMedia? vm { get; set; }
+
+    [Parameter]
+    public int Id { get; set; }
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            vm = await Http.GetFromJsonAsync<VenueMedia>($"api/VenueMedia/{Id}");
+
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+    }
+
+    protected async Task DeleteVenueMedia()
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"api/VenueMedia/{Id}");
+            NavManager.NavigateTo("/Dashboard/VenueMedias");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+    }
+}

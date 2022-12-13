@@ -1,0 +1,160 @@
+﻿@page "/Dashboard/Index"
+@using System;
+@using System.Collections.Generic;
+@using System.Linq;
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Inputs
+@using System.Security.Claims
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject ILocalStorageService LocalStorageService
+@inject AuthenticationStateProvider AuthService
+@attribute [Authorize(Roles = "admin")]
+
+<style>
+
+/*    .btn{
+        width: 100px;
+        border: 1px solid orange;
+        color: orange;
+        font-size: 14px;
+    }*/
+    a{
+        color: #1a1aff;
+        font-size: 13px;
+        text-decoration: none;
+    }
+    a:hover, a.btn:hover{
+        color: navajowhite;
+    }
+</style>
+
+
+    <AuthorizeView Roles="admin">
+        <Authorized>
+        <div class="container-fluid bg-gradient text-center p-4 text-light rounded" style="background-color:orange">
+
+            <div class="container-fluid text-dark">
+                <div class="row text-light p-4">
+                    <h1 class="bg-light text-dark rounded"><b>Admin dashboard</b></h1>
+                </div>
+                <div class="row">
+                    
+                    <div class="col">
+                        <div class="container-fluid p-4 bg-light rounded d-inline-block">
+                            <h3>
+                                <b><i class="bi bi-calendar-event"></i> View Venues</b>
+                            </h3>
+                            <div class="container p-2">
+                                <NavLink href="/Dashboard/Venues"><button type="button" class="btn m-2 btn-dark btn-lg">All Venues</button></NavLink>
+                                <NavLink href="/Dashboard/VenueCategories"><button type="button" class="btn m-2 btn-dark btn-lg">Venue Categories</button></NavLink>
+                                <NavLink href="/Dashboard/VenueMedias"><button type="button" class="btn m-2 btn-dark btn-lg">Venue Media</button></NavLink>
+                                <NavLink href="/Dashboard/VenueReviews"> <button type="button" class="btn m-2 btn-dark btn-lg">Venue Reviews</button></NavLink>
+                            </div>
+
+
+
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="container-fluid p-4 bg-light rounded d-inline-block">
+                            <h3>
+                                <b><i class="bi bi-calendar-event"></i> View Events</b>
+                            </h3>
+                            <div class="container p-2">
+                                <NavLink href="/Dashboard/Events"> <button type="button" class="btn m-2 btn-dark btn-lg">All Events</button></NavLink>
+                                <NavLink href="/Dashboard/EventsPending"> <button type="button" class="btn m-2 btn-dark btn-lg">Pending Events</button></NavLink>
+                                <NavLink href="/Dashboard/EventCategories"> <button type="button" class="btn m-2 btn-dark btn-lg">Event Categories</button></NavLink>
+                                <NavLink href="/Dashboard/EventMedias"><button type="button" class="btn m-2 btn-dark btn-lg">Event Media</button></NavLink>
+                                <NavLink href="/Dashboard/EventReviews"> <button type="button" class="btn m-2 btn-dark btn-lg">Event Reviews</button></NavLink>
+                            </div>
+
+
+
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="container-fluid p-4 bg-light rounded d-inline-block">
+                            <h3>
+                                <b><i class="bi bi-calendar-event"></i> View Others</b>
+                            </h3>
+                            <div class="container p-2">
+                                <NavLink href="/Dashboard/Attendings"> <button type="button" class="btn m-2 btn-dark btn-lg">Attendings</button></NavLink>
+                                <NavLink href="/Dashboard/Bar"> <button type="button" class="btn m-2 btn-dark btn-lg">Bar Chart</button></NavLink>
+                                
+                            </div>
+
+
+                            
+                        </div>
+                    </div>
+                    
+                </div>
+
+            </div>
+
+
+
+            
+            
+        </div>
+        
+        </Authorized>
+        <NotAuthorized>
+            <h2>Sorry, either there is an internal issue code 500 or you aren't an admin</h2>
+        </NotAuthorized>
+    </AuthorizeView>
+
+
+
+
+
+
+@code {
+    private bool UserChose { get; set; } = false;
+    private bool EventsOn { get; set; } = false;
+    private bool EventsPending { get; set; } = false;
+    private bool EventsCategories { get; set; } = false;
+    private bool EventsMedias { get; set; } = false;
+    private bool EventsReviews { get; set; } = false;
+    private bool VenuesOn { get; set; } = false;
+    private bool VenuesCategories { get; set; } = false;
+    private bool VenuesMedias { get; set; } = false;
+    private bool VenuesReviews { get; set; } = false;
+    private bool AllElse { get; set; } = false;
+
+    private void DisplayEvents() 
+    {
+        EventsOn = true;
+
+        VenuesOn = false;
+        VenuesCategories = false;
+        VenuesMedias = false;
+        VenuesReviews = false;
+
+
+        EventsPending = false;
+        EventsCategories = false;
+        EventsMedias = false;
+        EventsReviews = false;
+
+        AllElse = false;
+    }
+
+    private AuthenticationState authState;
+    private string role { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        authState = await AuthService.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var userId = int.Parse(user.FindFirst(c => c.Type == ClaimTypes.SerialNumber)?.Value);
+        var currentUser = await Http.GetFromJsonAsync<User>($"api/Users/{userId}");
+        role = currentUser.Role.ToString();
+    }
+    
+}

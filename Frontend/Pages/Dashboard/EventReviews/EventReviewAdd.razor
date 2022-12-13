@@ -1,0 +1,119 @@
+﻿@page "/Dashboard/EventReviewAdd/"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Event Review Create</h3>
+<a href="/Dashboard/EventReviews">Back to Event Reviews</a>
+<br />
+<br />
+<div class="row">
+    <div class="col-md-6">
+        <EditForm Model="@vr" OnValidSubmit="@PostEventReview">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="form-group">
+                <label class="control-label">
+                    Rating(1-5)
+                    <InputNumber class="form-control" @bind-Value=@vr.Rating />
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    Comment
+                    <InputText class="form-control" @bind-Value=@vr.Comment />
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    Event
+                    <InputSelect class="form-control" @bind-Value="EventId">
+                        @foreach (var v in EventList)
+                        {
+                            <option value = "@v.Id">@v.EventName</option>
+                        }
+                    </InputSelect>
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    User
+                    <InputSelect class="form-control" @bind-Value="UserId">
+                        @foreach (var u in UserList)
+                        {
+                            <option value="@u.Id">@u.Username</option>
+                        }
+                    </InputSelect>
+                </label>
+            </div>
+            <br>
+    
+            <div class="form-group">
+                <button type="submit" class="btn btn-secondary">Create Event Review</button>
+            </div>
+            <span>@errorMessage</span>
+        </EditForm>
+    </div>
+</div>
+
+@code
+{
+    private EventReview? vr = new EventReview();
+    private List<Event>? EventList { get; set; }
+    private List<User>? UserList { get; set; }
+    private Event? Event { get; set; }
+    private User? User { get; set; }
+    private int EventId;
+    private int UserId;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            EventList = await Http.GetFromJsonAsync<List<Event>>("api/Events");
+            UserList = await Http.GetFromJsonAsync<List<User>>("api/Users");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+
+
+    protected async Task PostEventReview()
+    {
+        try
+        {
+            var SelectedEvent = EventList.Find(v => v.Id == EventId);
+            var SelectedUser = UserList.Find(u => u.Id == UserId);
+            vr.Event = SelectedEvent;
+            vr.User = SelectedUser;
+            vr.DateTime = DateTime.UtcNow;
+            var response = await Http.PostAsJsonAsync("api/EventReviews", vr);
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = response.ReasonPhrase;
+                return;
+            }
+            NavManager.NavigateTo("/Dashboard/EventReviews");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+
+    }
+}

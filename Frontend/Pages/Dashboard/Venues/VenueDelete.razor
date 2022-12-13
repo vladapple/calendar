@@ -1,0 +1,62 @@
+﻿@page "/Dashboard/VenueDelete/{Id:int}"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Venue Delete</h3>
+<a href="/Dashboard/Venues">Back to Venues</a>
+<br />
+<div class="row">
+    <div class="col-md-4">
+            <p>
+                Id : @Id<br />
+                Venue Name: @venue.VenueName<br />
+                Address: @venue.Address<br />
+            </p> 
+    </div>
+        <br />
+        <div class="form-group">
+            <input value="Delete Venue" class="btn btn-secondary" @onclick="DeleteVenue" /><br /><br />
+            <span>@errorMessage</span>
+        </div>
+</div>
+
+@code
+{
+    private Venue? venue { get; set; }
+
+    [Parameter]
+    public int Id { get; set; }
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            venue = await Http.GetFromJsonAsync<Venue>($"api/Venues/{Id}");
+
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+    }
+
+    protected async Task DeleteVenue()
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"api/Venues/{Id}");
+            NavManager.NavigateTo("/Dashboard/Venues");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+    }
+}

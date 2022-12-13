@@ -1,0 +1,593 @@
+﻿@page "/"
+
+@using System;
+@using System.Collections.Generic;
+@using System.Linq;
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using System.Security.Claims
+@inject ILocalStorageService localStorage
+@inject AuthenticationStateProvider AuthService
+@inject NavigationManager NavManager
+@inject HttpClient Http
+
+<PageTitle>Index</PageTitle>
+
+<div class="container-fluid bg-light rounded p-2">
+    <div class="row p-2">
+        <div class="col m-2">
+            <h3><i class="bi bi-calendar4-event"></i> Carte Blanche Events</h3>
+        </div>
+@*        <div class="col col-lg">
+            <!--Search bar-->
+            <div class="input-group m-2">
+                <input type="text" class="form-control" placeholder="Search any Event">
+                <span class="input-group-text" id="basic-addon1">Search</span>
+            </div>
+            <!--Search bar-->
+        </div>*@
+    </div>
+    <span style="color:red;">@Error</span>
+    <hr />
+    <!--Event Content-->
+    <div class="row align-items-start p-2">
+        <!--Event cat-->
+        <div class="col-3">
+            <div class="list-group">
+                <button @onclick="GetEvents" type="button" class="list-group-item list-group-item-action bg-gradient" style="@DefaultStyle">
+                    All Events
+                </button>
+                <AuthorizeView Roles="user, admin">
+                    <Authorized>
+                        <button type="button" class="list-group-item list-group-item-action bg-gradient" style="@Style" @onclick="SelectAttendingEvents">Attending</button>
+                        <button type="button" class="list-group-item list-group-item-action bg-gradient" style="@Style" @onclick="SelectOrganizedEvents">Organized by you</button>
+                        
+                    </Authorized>
+                </AuthorizeView>
+                
+            </div>
+            <hr />
+            <div class="list-group">
+                <!--foreach event cat-->
+                @if (EventCatList != null) 
+                {
+                    foreach (var ev in EventCatList)
+                    {
+                        if (EventsToShow != null && ev.Id == EventsToShow.FirstOrDefault().Id && AllEvOn==false)
+                                   {
+                                    Style = "background-color:#1a1aff;color:#FFF;transition: 0.5s;";
+                            DefaultStyle = "";
+                        }else{
+                                    Style = "";
+                                }
+                        <button @onclick="() =>SelectEventCategory(ev.Id)" type="button" class="list-group-item list-group-item-action bg-gradient" style="@Style">@ev.CategoryName</button>
+                    }
+                } else
+                {
+                    <button type="button" class="list-group-item list-group-item-action bg-gradient">Event Categories aren't available :(</button>
+                }
+            </div>
+            <hr />
+            <div class="list-group">
+
+                <button type="button" class="list-group-item list-group-item-action bg-gradient"><i class="bi bi-question-circle-fill"></i> Help </button>
+
+            </div>
+
+        </div>
+        <!--Event cat-->
+        <!--Event View Header-->
+        <div class="col-9" hidden=@SearchOn>
+            <div class="row">
+                <div class="container d-flex">
+                    <button class="date_btns bg-gradient rounded-pill m-2" @onclick="Today">
+                        Today
+                    </button>
+                    <button class="date_btns bg-gradient rounded-pill m-2" @onclick="NextWeek">
+                        Next Week
+                    </button>
+                    <button class="date_btns bg-gradient rounded-pill m-2" @onclick="NextMonth">
+                        Next Month
+                    </button>
+                    <button class="date_btns bg-gradient rounded-pill m-2" @onclick="Weekend">
+                        Weekends
+                    </button>
+                    <button class="date_btns bg-gradient rounded-pill m-2" @onclick="GetEvents">
+                        As many more as we can
+                    </button>
+                </div>
+            </div>
+            <!--Event View Header-->
+            <div class="row">
+                <!--Events to List-->
+                <div class="col">
+                    <div class="container-fluid list-group rounded mt-2" style="overflow-x:hidden;overflow-y:auto;height:60vh;">
+
+
+                        @if (EventsToShow != null)
+                        {
+
+                            foreach (var e in EventsToShow)
+                            {
+
+                                   if(ViewEvent!=null&& e.Id == ViewEvent.Id)
+                                   {
+                                    Style = "background-color:#1a1aff;color:#FFF;transition: 0.5s;";
+                                }else{
+                                    Style = "";
+                                }
+
+
+                                <div @onclick="() => SelectEvent(e.Id)" class="list-group-item bg-gradient list-group-item-action rounded mb-2" style=@Style>
+                                    <div class="list-group">
+                                        <h4 class="card-title pt-2 pb-2"><b>@e.EventName</b></h4>
+                                        
+                                                <small>
+                                            <h5 class="pb-1">@e.EventCategory.CategoryName</h5>
+                                                    <h6 class="card-subtitle">@e.Start.Date.ToLongDateString()<br />@e.Start.ToShortTimeString() - @e.End.ToShortTimeString()</h6>
+                                                    <p class="card-text mb-2 " style="overflow:auto">
+                                                <span>
+                                                    @if (e.AverageRating != null)
+                                                    {
+                                                        int fullStars = Decimal.ToInt32(e.AverageRating);
+                                                        int emptyStars = 5 - fullStars;
+                                                        if (fullStars == 0)
+                                                        {
+                                                                    <i class="bi bi-star"></i>
+                                                                    <i class="bi bi-star"></i>
+                                                                    <i class="bi bi-star"></i>
+                                                                    <i class="bi bi-star"></i>
+                                                                    <i class="bi bi-star"></i>
+                                                        }
+                                                        else
+                                                        {
+                                                            for (int i = 0; i < fullStars; i++)
+                                                            {
+                                                                            <i class="bi bi-star-fill"></i>
+                                                            }
+                                                            for (int j = 0; j < emptyStars; j++)
+                                                            {
+                                                                            <i class="bi bi-star"></i>
+                                                            }
+                                                        }
+                                                    }
+                                                </span>
+                                                </p>
+                                                </small>
+                                            </div>
+                                        </div>
+                            }
+                        }else
+                        {
+                            <div class="list-group-item list-group-item-action rounded">
+                                <p>The content here is not available</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <!--Events to List-->
+                <!--Events By ID-->
+                <div class="col">
+                    <div class="container-fluid card rounded mt-2" style="overflow-x:hidden;overflow-y:auto;height:60vh;width:auto;">
+                        <div class="container-fluid">
+                            @if(ViewEvent!=null){
+                                <div class="pt-1">
+                                    <div class="row">
+                                        <h2><b>@ViewEvent.EventName</b></h2>
+                                    </div>
+                                    @foreach(var v in ViewEventMedia)
+                                    {
+                                        if(v.Media == EventMedia.Medias.image)
+                                        {
+                                            <img class="d-block w-50" src=@v.Url alt=@v.Event.EventName/>
+                                            break;
+                                        }
+                                    }
+                                    @*<div class="row bg-info text-light bg-gradient rounded p-4" style="min-height:30vh;">*@
+                                        @*<div class="row" style="min-height:30vh;">
+                                        <div id="carouselExampleControls" class="carousel slide" data-bs-ride="carousel">
+                                            <div class="carousel-inner">
+                                                @if (ViewEventMedia != null)
+                                                {
+                                                    @foreach (var em in ViewEventMedia)
+                                                    {
+                                                        @if (em == ViewEventMedia[0])
+                                                        {
+                                                            <div class="carousel-item active">
+                                                                <img class="d-block w-100" src="@em.Url" alt="">
+                                                            </div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="carousel-item">
+                                                                <img class="d-block w-100" src="@em.Url" alt="">
+                                                            </div>
+                                                        } 
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <div class="carousel-item active">
+                                                      <img class="d-block w-100" src="..." alt="No Media">
+                                                    </div>
+                                                }
+                                            </div>
+                                            <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleControls" data-bs-slide="prev">
+                                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                                <span class="visually-hidden">Previous</span>
+                                            </button>
+                                            <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleControls" data-bs-slide="next">
+                                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                                <span class="visually-hidden">Next</span>
+                                            </button>
+                                        </div>                                        
+                                    </div>*@
+                                    <div class="row">
+                                        <i class="bi bi-car-front"></i>
+                                    </div>
+                                    <hr>
+                                    <div class="row">
+                                       <h5><b>Details</b></h5>
+                                       <table>
+                                            <tr>
+                                                <td>
+                                                    <i class="bi bi-star"></i>
+                                                </td>
+                                                <td>
+                                                    @ViewEvent.EventCategory.CategoryName
+                                                </td>
+                                            </tr>
+                                           <tr>
+                                               <td>
+                                                    <i class="bi bi-calendar"></i>
+                                               </td>
+                                                <td>
+                                                    @ViewEvent.Start.ToLongDateString()
+                                                </td>
+                                           </tr>
+                                           <tr>
+                                                <td>
+                                                    <i class="bi bi-clock"></i>
+                                                </td>
+                                               <td>
+                                                    @ViewEvent.Start.ToShortTimeString() - @ViewEvent.End.ToShortTimeString()
+                                               </td>
+                                           </tr>
+                                            <tr>
+                                                <td>
+                                                    <i class="bi bi-building"></i>
+                                                </td>
+                                                <td>
+                                                    @ViewEvent.Venue.VenueName
+                                                </td>
+                                            </tr>
+                                           <tr>
+                                               <td>
+                                                    <i class="bi bi-geo-alt"></i>
+                                               </td>
+                                               <td>
+                                                    @ViewEvent.Venue.Address.ToString()     
+                                               </td>
+                                           </tr>
+                                            <tr>
+                                                <td>
+                                                    <i class="bi bi-ticket-perforated"></i> @*no clue why this doesn't show up*@
+                                                </td>
+                                                <td>
+                                                    @if (ViewEvent.TicketPrice <= 0)
+                                                    {
+                                                        <div>Free</div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div>$@ViewEvent.TicketPrice.ToString("0.00")</div>
+                                                    }
+                                                    @if (ViewEvent.AgeRestricted)
+                                                    {
+                                                        <div>18+</div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div>All Ages</div>
+                                                    }
+                                                </td>
+                                            </tr>
+                                       </table>
+                                       <div class="form-text">
+                                            <p class="sub">@ViewEvent.Descr.ToString()</p>
+                                       </div>
+                                       <hr>
+                                        <div class="row">
+                                            <h5><b>Information and links</b></h5>
+                                            @if (currentUser != null)
+                                            {
+                                                <a href="/Components/AddEventReview/@ViewEvent.Id" class="date_btns bg-gradient rounded-pill text-center m-2">Leave Review</a>
+                                                <a href="/Components/AddAttending/@ViewEvent.Id" class="date_btns bg-gradient rounded-pill text-center m-2">I'm Attending</a>
+                                            }
+                                        @*
+                                            @if (ViewEvent.End < DateTime.Now )
+                                            {
+                                                <a href="#">Write a review</a>
+                                            }
+                                            else
+                                            {
+                                                <a href="#">Planning to attend?</a>
+                                            }
+                                        *@
+                                            
+                                        </div>
+                                        <hr>
+                                    </div>
+                                </div>
+                            }else{
+                                <p>Select an event</p>
+                            }
+                            
+                        </div>
+                    </div>
+                </div>
+                <!--Events By ID-->
+            </div>
+
+        </div>
+    </div>
+</div>
+@*Event Content*@
+
+
+
+@code{
+
+    private AuthenticationState? authState;
+
+    private User? currentUser { get; set; }
+    private int userId { get; set; }
+
+    //TODO: GET BY NEXT WEEK EVENTS ... EVENTS HEADER FUNCTIONS
+    private bool AllEvOn { get; set; } = true;
+    private bool SearchOn { get; set; } = false;
+    private Event[]? EventsToShow; //an array of events to display depending on what where why (event cats and dates)
+    private EventCategory[]? EventCatList;
+    private Event[]? EventList;
+    private Event[]? EventListAttending;
+    private Event[]? EventListOrganized;
+    private Event[]? EventListByCat;
+    private Event[]? EventListByDate;
+    //today //nextweek //next month //weekends
+    private Event[]? EventListToday;
+    //private Event[]? EventListNextWeek; does not seem to work
+    private Event[]? EventListNextMonth;
+    private Event[]? EventListWeekends;
+    private Event? ViewEvent;
+    private EventMedia[]? ViewEventMedia;
+    private int EventID { get; set; }
+    private string? Error{ get; set; } = "";
+    private string? Style = "";
+    private string? DefaultStyle = "";
+
+
+    protected override void OnInitialized()
+    {
+        GetUser();
+        GetEvents();
+    }
+
+    private async void GetUser()
+    {
+        authState = await AuthService.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var tempID = user.FindFirst(c => c.Type == ClaimTypes.SerialNumber)?.Value;
+        currentUser = await Http.GetFromJsonAsync<User>($"api/Users/{tempID}");
+        if (tempID != null)
+        {
+            userId = Convert.ToInt32(tempID); //if you call int userId it will have the id too
+            //currentUser.Id = userId; //if you want to call it as a User class the id will work
+        }
+    }
+    private async void GetEvents()
+    {
+        try
+        {
+            if(userId==0){
+                return;
+            }
+
+            EventList = await Http.GetFromJsonAsync<Event[]>("/api/Events/approved");
+            /*
+            EventListToday = await Http.GetFromJsonAsync<Event[]>("/api/Events/today");
+            //EventListNextWeek = await Http.GetFromJsonAsync<Event[]>("/api/Events/nextWeek");
+            EventListNextMonth = await Http.GetFromJsonAsync<Event[]>("/api/Events/nextMonth");
+            EventListWeekends = await Http.GetFromJsonAsync<Event[]>("/api/Events/weekend");
+            */
+            EventCatList = await Http.GetFromJsonAsync<EventCategory[]>("/api/EventCategories");
+            EventListAttending = await Http.GetFromJsonAsync<Event[]>("/api/Attending/userAsEvents/" + userId);
+            EventListOrganized = await Http.GetFromJsonAsync<Event[]>($"api/Events/user/{userId}");
+
+            if (EventCatList == null || EventList == null || EventListAttending == null)
+            {
+                Error += "Events arent available right now.";
+            }
+        }
+        catch(Exception ex)
+        {
+            Error += ex.Message;
+        }
+        finally
+        {
+            AllEvOn = true;
+            DefaultStyle = "background-color:#1a1aff;color:white;";
+            Style = "";
+            EventsToShow = await Http.GetFromJsonAsync<Event[]>("/api/Events/approved");
+            StateHasChanged();
+        }
+    }
+    private void SelectAttendingEvents()
+    {
+        try
+        {
+            if (EventListAttending.Count() < 1)
+            {
+                Error = "Seems like your list is empty.";
+            }
+            else
+            {
+                EventsToShow = EventListAttending;
+            }
+        }
+        catch(Exception ex)
+        {
+            Error += ex.Message;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+    private void SelectOrganizedEvents()
+    {
+        try
+        {
+            if (EventListOrganized.Count() < 1)
+            {
+                Error = "Seems like your list is empty.";
+            }
+            else
+            {
+                EventsToShow = EventListOrganized;
+            }
+        }
+        catch (Exception ex)
+        {
+            Error += ex.Message;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+    private async void SelectEventCategory(int ID)
+    { 
+        try
+        {
+            EventsToShow = await Http.GetFromJsonAsync<Event[]>("/api/Events/category/" + ID);
+
+        }catch(Exception ex)
+        {
+            Error += ex.Message;
+        }finally
+        {
+            AllEvOn = false;
+            StateHasChanged();
+        }
+    }
+    private async void SelectEvent(int ID)
+    {
+        try
+        {
+            await GetEventsByID(ID);
+            await GetMediaByEvent(ID);
+
+        }
+        catch(Exception ex)
+        {
+            Error += ex.Message;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+    private async Task GetEventsByID(int ID)
+    {
+        try
+        {
+            if (ID != 0)
+            {
+                ViewEvent = await Http.GetFromJsonAsync<Event>("/api/Events/" + ID);
+            }else{
+                Error += "No Event Selected or ViewEvent is Null.";
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Error += ex.Message;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+    private async Task GetMediaByEvent(int ID)
+    {
+        try
+        {
+            if (ID != 0)
+            {
+                ViewEventMedia = await Http.GetFromJsonAsync<EventMedia[]>($"/api/EventMedia/event/{ID}");
+            }
+            else
+            {
+                Error += "No Event Selected or ViewEventMedia is Null.";
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Error += ex.Message;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+    protected async Task Today()
+    {
+        try
+        {
+            EventsToShow = await Http.GetFromJsonAsync<Event[]>("api/Events/today");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+    protected async Task NextWeek()
+    {
+        try
+        {
+            EventsToShow = await Http.GetFromJsonAsync<Event[]>("api/Events/nextWeek");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+    protected async Task NextMonth()
+    {
+        try
+        {
+            EventsToShow = await Http.GetFromJsonAsync<Event[]>("api/Events/nextMonth");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+    protected async Task Weekend()
+    {
+        try
+        {
+            EventsToShow = await Http.GetFromJsonAsync<Event[]>("api/Events/weekend");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+
+    }
+}
+
+

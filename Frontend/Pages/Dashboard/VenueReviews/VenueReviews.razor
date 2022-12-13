@@ -1,0 +1,72 @@
+﻿@page "/Dashboard/VenueReviews"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject HttpClient Http
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Venue Reviews</h3>
+<a href="/Dashboard/Index">Back to dashboard</a>
+<div class="text-center">
+    <a href="/Dashboard/VenueReviewAdd">Add Venue Review</a>
+</div>
+<br>
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Id</th>
+                        <th scope="col">Comment</th>
+                        <th scope="col">Rating</th>
+                        <th scope="col">DateTime</th>
+                        <th scope="col">User Id</th>
+                        <th scope="col">UserName</th>
+                        <th scope="col">Venue Id</th>
+                        <th scope="col">Venue Name</th>  
+                        <th scope="col">Links</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in VenueReviewList)
+                    {
+                        <tr>
+                            <td>@v.Id</td>
+                            <td>@v.Comment</td>
+                            <td>@v.Rating</td>
+                            <td>@v.DateTime</td>
+                            <td><a href="/Dashboard/VenueReviewsByUser/@v.User.Id">@v.User.Id</a></td>
+                            <td><a href="/Dashboard/VenueReviewsByUser/@v.User.Id">@v.User.Username</a></td>
+                            <td><a href="/Dashboard/VenueReviewsByVenue/@v.Venue.Id">@v.Venue.Id</a></td>
+                            <td><a href="/Dashboard/VenueReviewsByVenue/@v.Venue.Id">@v.Venue.VenueName</a></td>
+                            <td>
+                                <a href="/Dashboard/VenueReviewUpdate/@v.Id">Edit |</a>
+                                <a href="/Dashboard/VenueReviewDelete/@v.Id"> Delete</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private List<VenueReview>? VenueReviewList { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            VenueReviewList = await Http.GetFromJsonAsync<List<VenueReview>>("api/VenueReviews");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+}

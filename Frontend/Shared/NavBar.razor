@@ -1,0 +1,96 @@
+﻿@using System;
+@using System.Collections.Generic;
+@using System.Linq;
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Inputs
+@using System.Security.Claims
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject ILocalStorageService LocalStorageService
+@inject AuthenticationStateProvider AuthService
+
+
+<div id="SideBar" style="@SidebarStyle" class="sidebar bg-gradient">
+    <div class="close_btn" @onclick=CloseNav>
+        <small><i class="bi bi-x-square-fill" style="color:white;"></i></small>
+    </div>
+    <NavLink href="/"><button class="nav_btn" type="button"><b>Home</b></button></NavLink>
+    <AuthorizeView Roles="user, admin">
+                    <Authorized>
+                       
+                <NavLink href="/Events"><button class="nav_btn" type="button"><b>Create Event</b></button></NavLink>
+            <NavLink href="/UserDashboard"><button class="nav_btn" type="button"><b>Dashboard</b></button></NavLink>
+                 
+                    </Authorized>
+                    <NotAuthorized>
+            <NavLink href="/Login"><button class="nav_btn" type="button"><b>Create Event</b></button></NavLink>
+            <NavLink href="/Registration"><button class="nav_btn" type="button"><b>Register</b></button></NavLink>
+            <NavLink href="/Login"><button class="nav_btn" type="button"><b>Login</b></button></NavLink>
+                    </NotAuthorized>
+                </AuthorizeView>
+   
+</div>
+
+<div id="main" style="@MainStyle">
+   
+        <div class="top_bar_container">
+            <ul>
+                <li>
+                     <div class="close_btn" @onclick=OpenNav hidden=@HideBtn>
+                    <small><i class="bi bi-list"></i></small>
+                    </div>
+                </li>
+
+                <AuthorizeView Roles="user">
+                    <Authorized>
+                        <li>
+                        <NavLink href="/UserDashboard"><button class="dash btn bg-gradient btn-outline-secondary" type="button">@context.User.Identity.Name <i class="bi bi-person-square"></i></button></NavLink>
+                        </li>
+                    </Authorized>
+                </AuthorizeView>
+
+                <AuthorizeView Roles="admin">
+                    <Authorized>
+                        <li>
+                        <NavLink href="/Dashboard/Index"><button class="dash bg-gradient btn btn-outline-secondary" type="button"><b> Admin Dashboard <i class="bi bi-speedometer2"></i></b></button></NavLink>
+                        </li>
+                    </Authorized>
+                </AuthorizeView>
+
+                <li>
+                <LoginLogoutButton/>
+                </li>
+            </ul>
+            
+        </div>
+       
+    
+</div>
+
+
+@code{
+    private string? SidebarStyle;
+    private string? MainStyle;
+    private bool HideBtn { get; set; } = false;
+
+    private void CloseNav()
+    {
+        HideBtn = false;
+        SidebarStyle = "width:0";
+        MainStyle = "margin-right:0";
+        StateHasChanged();
+
+    }
+    private void OpenNav()
+    {
+        HideBtn = true;
+        SidebarStyle = "width:250px";
+        MainStyle = "margin-right:250px;";
+        StateHasChanged();
+    }
+}

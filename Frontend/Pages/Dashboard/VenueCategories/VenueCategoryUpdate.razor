@@ -1,0 +1,80 @@
+﻿@page "/Dashboard/VenueCategoryUpdate/{Id:int}"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Venue Category Edit</h3>
+<a href="/Dashboard/VenueCategories">Back to Venue Categories</a>
+<br />
+<br />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm Model="@VC" OnValidSubmit="@PutVenueCategory">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-group">
+                <label class="control-label">
+                    Category Name:
+                    <InputText class="form-control" @bind-Value=@VC.CategoryName />
+                </label>
+            </div><br>
+            <div class="form-group">
+                <label class="control-label">
+                    Description:
+                    <InputText class="form-control" @bind-Value=@VC.Descr />
+                </label>
+            </div><br>
+            <div class="form-group">
+                <button type="submit" class="btn btn-secondary">Update Category</button>
+            </div>
+        </EditForm>
+        <span>@errorMessage</span>
+    </div>
+</div>
+
+@code 
+{
+    private VenueCategory? VC { get; set; }
+
+    [Parameter]
+    public int Id{ get; set; }
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            VC = await Http.GetFromJsonAsync<VenueCategory>($"api/VenueCategories/{Id}");
+             
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+    }
+
+    protected async Task PutVenueCategory()
+    {
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"api/VenueCategories/{Id}", VC);
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = response.ReasonPhrase;
+                return;
+            }
+            NavManager.NavigateTo("/Dashboard/VenueCategories");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+
+
+    }
+}

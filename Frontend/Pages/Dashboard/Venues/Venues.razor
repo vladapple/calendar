@@ -1,0 +1,76 @@
+﻿@page "/Dashboard/Venues"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject HttpClient Http
+@attribute [Authorize (Roles = "admin")]
+
+<h3>Venues</h3>
+<a href="/Dashboard/Index">Back to dashboard</a>
+<div class="text-center">
+    <a href="/Dashboard/VenueAdd">Add Venue</a>
+</div>
+<br>
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Id</th>
+                        <th scope="col">Venue Name</th>
+                        <th scope="col">Address</th>
+                        <th scope="col">Coordinates</th>
+                        <th scope="col">Capacity</th>
+                        <th scope="col">Wheelchair</th
+                        <th scope="col">Food</th>
+                        <th scope="col">Drink</th>
+                        <th scope="col">Category Name</th>
+                        <th scope="col">Rating</th>  
+                        <th scope="col">Links</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in VenueList)
+                    {
+                        <tr>
+                            <td>@v.Id</td>
+                            <td>@v.VenueName</td>
+                            <td>@v.Address</td>
+                            <td>@v.Coordinates</td>
+                            <td>@v.Capacity</td>
+                            <td>@v.WheelchairAccess</td>
+                            <td>@v.Food</td>
+                            <td>@v.Drink</td>
+                            <td>@v.VenueCategory.CategoryName</td>
+                            <td>@v.AverageRating</td>
+                            <td>
+                                <a href="/Dashboard/VenueUpdate/@v.Id">Edit |</a>
+                                <a href="/Dashboard/VenueDelete/@v.Id"> Delete</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private List<Venue>? VenueList { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            VenueList = await Http.GetFromJsonAsync<List<Venue>>("api/Venues");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+}

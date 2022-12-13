@@ -1,0 +1,64 @@
+﻿@page "/Dashboard/EventCategoryAdd/"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Event Category Create</h3>
+<a href="/Dashboard/EventCategories">Back to Event Categories</a><br />
+<div class="row">
+    <div class="col-md-4">
+        <div class="form-group">
+            <label class="control-label">Category Name</label>
+            <input type="text" class="form-control" @bind="CategoryName" required />
+        </div><br>
+
+        <div class="form-group">
+            <label class="control-label">Description</label>
+            <input type="text" class="form-control" @bind="Descr" required />
+        </div>
+        <br>
+
+        <div class="form-group">
+            <input value="Create Category" class="btn btn-secondary" @onclick="PostEventCategory" /><br /><br />
+            <span>@errorMessage</span>
+        </div>
+    </div>
+</div>
+
+@code
+{
+    private string? CategoryName;
+    private string? Descr;
+    private string? errorMessage;
+
+
+    protected async Task PostEventCategory()
+    {
+        try
+        {
+            var EC = new EventCategory
+                {
+                    CategoryName = CategoryName,
+                    Descr = Descr
+                };
+            var response = await Http.PostAsJsonAsync("api/EventCategories", EC);
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = response.ReasonPhrase;
+                return;
+            }
+            NavManager.NavigateTo("/Dashboard/EventCategories");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+
+
+    }
+}

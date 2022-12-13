@@ -1,0 +1,78 @@
+﻿@page "/Dashboard/EventsPending"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject HttpClient Http
+@attribute [Authorize (Roles = "admin")]
+
+<h3>Pending Events</h3>
+<a href="/Dashboard/Index">Back to dashboard</a>
+<br>
+<div class="container-fluid" style="overflow:scroll">
+
+        
+            <table class="table text-dark bg-light rounded bg-gradient" style="overflow:scroll">
+                <thead>
+                    <tr>
+                        <th scope="col">Id</th>
+                        <th scope="col">Event Name</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Start Time</th>
+                        <th scope="col">End Time</th>
+                        <th scope="col">Age Restricted?</th
+                        <th scope="col">Ticket Price</th>
+                        <th scope="col">Approval</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Rating</th>
+                        <th scope="col">Venue</th>
+                        <th scope="col">Organizer</th> 
+                        <th scope="col">Links</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in EventList)
+                    {
+                            <tr>
+                                <td>@e.Id</td>
+                                <td>@e.EventName</td>
+                                <td>@e.EventCategory.CategoryName</td>
+                                <td>@e.Descr</td>
+                                <td>@e.Start</td>
+                                <td>@e.End</td>
+                                <td>@e.AgeRestricted</td>
+                                <td>@e.TicketPrice</td>
+                                <td>@e.ApprovalStatus</td>
+                                <td>@e.CurrentStatus</td>
+                                <td>@e.AverageRating</td>
+                                <td>@e.Venue.VenueName</td>
+                                <td>@e.User.Username</td>
+                                <td>
+                                    <a href="/Dashboard/EventStatusUpdate/@e.Id">Edit Status</a>
+                                </td>
+                            </tr>
+                    }
+                </tbody>
+            </table>
+        
+
+</div>
+
+
+@code {
+    private List<Event>? EventList { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            EventList = await Http.GetFromJsonAsync<List<Event>>("api/Events/approval?status=0");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+}

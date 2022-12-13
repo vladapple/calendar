@@ -1,0 +1,62 @@
+﻿@page "/Dashboard/EventCategoryDelete/{Id:int}"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Event Category Delete</h3>
+<a href="/Dashboard/EventCategories">Back to Event Categories</a>
+<br />
+<div class="row">
+    <div class="col-md-4">
+        <p>
+            Id : @Id<br />
+            Category Name: @EC.CategoryName<br />
+            Description: @EC.Descr
+        </p>
+    </div>
+    <br />
+    <div class="form-group">
+        <input value="Delete Category" class="btn btn-secondary" @onclick="DeleteEventCategory" /><br /><br />
+        <span>@errorMessage</span>
+    </div>
+</div>
+
+@code
+{
+    private EventCategory? EC { get; set; }
+
+    [Parameter]
+    public int Id { get; set; }
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            EC = await Http.GetFromJsonAsync<EventCategory>($"api/EventCategories/{Id}");
+
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+    }
+
+    protected async Task DeleteEventCategory()
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"api/EventCategories/{Id}");
+            NavManager.NavigateTo("/Dashboard/EventCategories");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+    }
+}

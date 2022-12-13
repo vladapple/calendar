@@ -1,0 +1,80 @@
+﻿@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject HttpClient Http
+
+<h3>Venues</h3>
+
+
+@if (VenuesList==null)
+{
+    <p>Loading...</p>
+}
+
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Address</th>
+                <th>Coordinates</th>
+                <th>Capacity</th>
+                <th>Accessibility Friendly</th>
+                <th>Food Friendly</th>
+                <th>Alcohol Friendly</th>
+                <th>Average Ratings</th>
+                <th>Venue Type</th>
+            </tr>
+        </thead>
+    @foreach (var venue in VenuesList)
+    {
+        
+        <tbody>
+            
+        <tr>
+                    <td>@venue.Id</td>
+                    <td>@venue.VenueName</td>
+                    <td>@venue.Address</td>
+                    <td>@venue.Coordinates"</td>
+                    <td>@venue.Capacity</td>
+                    <td>@YesNo(venue.WheelchairAccess)</td>
+                    <td>@YesNo(venue.Food)</td>
+                    <td>@YesNo(venue.Drink)</td>
+                    <td>@venue.AverageRating</td>
+                    <td>@venue.VenueCategory.CategoryName</td>
+        </tr>
+            </tbody>
+
+    }
+        </table>
+}
+
+
+
+@code {
+    private List<Venue> VenuesList;
+
+    private string YesNo(bool x)
+    {
+        string yes = "Yes", no = "No";
+        if(x==true)
+        {
+            return yes;
+        }
+        return no;
+    }
+    protected override async Task OnInitializedAsync() 
+    {
+        try
+        {
+            VenuesList = await Http.GetFromJsonAsync<List<Venue>>("api/Venues");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+}

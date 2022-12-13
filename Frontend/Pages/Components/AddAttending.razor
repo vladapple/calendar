@@ -1,0 +1,77 @@
+﻿@page "/Components/AddAttending/{eventId:int}"
+
+@using System;
+@using System.Collections.Generic;
+@using System.Linq;
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Inputs
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@using System.Security.Claims
+@inject ILocalStorageService localStorage
+@inject AuthenticationStateProvider AuthService
+
+@if (alreadyExists)
+{
+    <h3>You are already going to this event, can not register again!</h3>
+    <br />
+    <a href="/">back home</a>
+}
+else
+{
+   <h3>Success! You are going to @selectedEvent.EventName !</h3>
+    <br />
+    <a href="/">back home</a>
+}
+
+
+@code {
+    [Parameter]
+    public int eventId { get; set; }
+    private Event? selectedEvent { get; set; }
+    private Attending? vr = new Attending();
+
+    private int userId { get; set; }
+    private User? currentUser { get; set; }
+
+    private int StarRating { get; set; }
+
+    private string? errorMessage;
+
+    private bool alreadyExists = false;
+    private AuthenticationState authState;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            authState = await AuthService.GetAuthenticationStateAsync();
+            var user = authState.User;
+            userId = int.Parse(user.FindFirst(c => c.Type == ClaimTypes.SerialNumber)?.Value);
+            currentUser = await Http.GetFromJsonAsync<User>($"api/Users/{userId}");
+            selectedEvent = await Http.GetFromJsonAsync<Event>($"api/Events/{eventId}");
+
+            var userAttendings = await Http.GetFromJsonAsync<List<Attending>>($"api/Attending/user/{userId}");
+            var attending = userAttendings.FirstOrDefault(r => r.Event.Id == eventId);
+            if(attending != null)
+            {
+                alreadyExists = true;
+            }
+            else
+            {
+                vr.Event = selectedEvent;
+                vr.User = currentUser;
+                var response = await Http.PostAsJsonAsync("api/Attending", vr);
+            }
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+}

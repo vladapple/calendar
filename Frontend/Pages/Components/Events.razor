@@ -1,0 +1,126 @@
+﻿@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject HttpClient Http
+
+<h3>Events</h3>
+<div class="container">
+    <div class="row">
+            <div class="col-3"></div>
+            <div class="col-2">
+                <button class="btn btn-secondary round" @onclick="Live">Live Events</button>
+            </div>
+            <div class="col-2">
+                <button class="btn btn-secondary round" @onclick="Upcoming">Upcoming Events</button>
+            </div>
+            <div class="col-2">
+                <button class="btn btn-secondary round" @onclick="All">All Events</button>
+            </div>
+            <div class="col-3"></div>
+    </div>
+    @foreach (var e in EventList)
+    {
+        <div class="row">
+            <div class="col-3"></div>
+            <div class="col-6">
+                rating: @e.AverageRating
+            </div>
+            <div class="col-3"></div>
+            <div class="col-3"></div>
+            <div class="col-6">
+                @e.EventName
+            </div>
+            <div class="col-3"></div>
+            <div class="col-3"></div>
+            <div class="col-6">
+                @e.Descr
+            </div>
+            <div class="col-3"></div>
+            <div class="col-3"></div>
+            <div class="col-3">
+                @e.Start
+            </div>
+            <div class="col-3">
+                @e.End
+            </div>
+            <div class="col-3"></div>
+            <div class="col-3"></div>
+            <div class="col-3">
+                    @if (e.AgeRestricted == true)
+                    {
+                        <div>18+</div>
+                    }
+                    else{
+                        <div>No age restrictions</div>
+                    }
+            </div>
+            <div class="col-3">
+                @e.TicketPrice $
+            </div>
+            <div class="col-3"></div>
+            <div class="col-3"></div>
+            <div class="col-6">
+                @e.Venue.Address
+            </div>
+            <div class="col-3"></div>
+            <div class="col-3"></div>
+            <div class="col-3">
+                <a href="/EventView/@e.Id">View</a>
+            </div>
+        </div>
+        <hr />
+    }
+</div>                         
+
+@code {
+    private List<Event>? EventList { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            EventList = await Http.GetFromJsonAsync<List<Event>>("api/Events/current?status=1");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+
+    protected async Task Live()
+    {
+        try
+        {
+            EventList = await Http.GetFromJsonAsync<List<Event>>("api/Events/current?status=1");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+    protected async Task Upcoming()
+    {
+        try
+        {
+            EventList = await Http.GetFromJsonAsync<List<Event>>("api/Events/current?status=0");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+    protected async Task All()
+    {
+        try
+        {
+            EventList = await Http.GetFromJsonAsync<List<Event>>("api/Events/approved");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+
+    }
+}
+

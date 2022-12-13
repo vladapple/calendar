@@ -1,0 +1,182 @@
+﻿@page "/Dashboard/EventUpdate/{Id:int}"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Event Edit</h3>
+<a href="/Dashboard/Events">Back to Events</a><br /><br />
+<div class="row">
+    <div class="col-md-6">
+        <EditForm Model="@editEvent" OnValidSubmit="@PutEvent">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-group">
+                <label class="control-label">
+                    Event Name
+                    <InputText class="form-control" @bind-Value=@editEvent.EventName />
+                </label>
+            </div><br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    Description
+                    <InputText class="form-control" @bind-Value=@editEvent.Descr />
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    Start Time
+                    <InputDate Type=InputDateType.DateTimeLocal class="form-control" @bind-Value=@editEvent.Start />
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    End Time
+                    <InputDate Type=InputDateType.DateTimeLocal class="form-control" @bind-Value=@editEvent.End />
+                </label>
+            </div>
+            <br>
+
+            <div class="col-md-12">
+                <label class="control-label">Age Restricted</label>&nbsp;
+                <InputCheckbox @bind-Value=@editEvent.AgeRestricted />
+                &nbsp;&nbsp;&nbsp;&nbsp;
+            </div>
+            <br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    Ticket Price
+                    <InputNumber class="form-control" @bind-Value=@editEvent.TicketPrice />
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    Event Category
+                    <InputSelect class="form-control" @bind-Value="CategoryId">
+                        @foreach (var ec in EventCategoryList)
+                        {
+                            <option value="@ec.Id">@ec.CategoryName</option>
+                        }
+                    </InputSelect>
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    Organizer
+                    <InputSelect class="form-control" @bind-Value="UserId">
+                        @foreach (var u in UserList)
+                        {
+                            <option value="@u.Id">@u.Username</option>
+                        }
+                    </InputSelect>
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    Venue
+                    <InputSelect class="form-control" @bind-Value="VenueId">
+                        @foreach (var v in VenueList)
+                        {
+                            <option value="@v.Id">@v.VenueName</option>
+                        }
+                    </InputSelect>
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                <button type="submit" class="btn btn-secondary">Edit Event</button>
+            </div>
+            <span class="text-danger">@errorMessage</span>
+        </EditForm>
+    </div>
+</div>
+
+@code
+{
+    private Event? editEvent = new Event();
+
+    private List<User>? UserList { get; set; }
+    //private User? User { get; set; }
+    private int UserId;
+
+    private List<Venue>? VenueList { get; set; }
+    //private Venue? Venue { get; set; }
+    private int VenueId;
+
+    private List<EventCategory>? EventCategoryList { get; set; }
+    //private EventCategory? EventCategory { get; set; }
+    private int CategoryId;
+
+    [Parameter]
+    public int Id { get; set; }
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            editEvent = await Http.GetFromJsonAsync<Event>($"api/Events/{Id}");
+            CategoryId = editEvent.EventCategory.Id;
+            VenueId = editEvent.Venue.Id;
+            UserId = editEvent.User.Id;
+            EventCategoryList = await Http.GetFromJsonAsync<List<EventCategory>>("api/EventCategories");
+            UserList = await Http.GetFromJsonAsync<List<User>>("api/Users");
+            VenueList = await Http.GetFromJsonAsync<List<Venue>>("api/Venues");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+
+
+    protected async Task PutEvent()
+    {
+        try
+        {
+            var SelectedEventCategory = EventCategoryList.Find(e => e.Id == CategoryId);
+            var SelectedVenue = VenueList.Find(e => e.Id == VenueId);
+            var SelectedUser = UserList.Find(e => e.Id == UserId);
+
+            editEvent.EventCategory = SelectedEventCategory;
+            editEvent.Venue = SelectedVenue;
+            editEvent.User = SelectedUser;
+            
+            editEvent.Start = editEvent.Start.ToUniversalTime();
+            editEvent.End = editEvent.End.ToUniversalTime();
+            /*
+            editEvent.ApprovalStatus = Event.Approvals.pending;
+            editEvent.CurrentStatus = Event.Current.upcoming;
+            */
+            var response = await Http.PutAsJsonAsync($"api/Events/{Id}", editEvent);
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = response.ReasonPhrase;
+                return;
+            }
+            NavManager.NavigateTo("/Dashboard/Events");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+
+    }
+}

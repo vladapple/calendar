@@ -1,0 +1,146 @@
+﻿@page "/Dashboard/VenueMediaAdd"
+@using System;
+@using System.Collections.Generic;
+@using System.Linq;
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Inputs
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject IConfiguration Configuration
+@attribute [Authorize(Roles = "admin")]
+
+<style>
+    #DropArea {
+        padding: 50px 25px;
+        margin: 30px auto;
+        border: 1px solid #c3c3c3;
+        text-align: center;
+        width: 20%;
+        display: inline-flex;
+    }
+</style>
+
+<h3>Venue Media Create</h3>
+<a href="/Dashboard/VenueMedias">Back to Venue Medias</a>
+<br />
+<br />
+<div class="row">
+    <div class="col-md-6">
+        <div id="DropArea">Drop files here to upload</div><br />
+
+        <SfUploader AllowMultiple="false" AutoUpload="false"
+                    AllowedExtensions=".jpg, .jpeg, .png, .gif, .mp3, .mp4"
+                    ID="UploadFiles" DropArea="#DropArea" MaxFileSize="5000000">
+            <UploaderEvents FileSelected="OnFileSelected"></UploaderEvents>
+            <UploaderAsyncSettings SaveUrl="@url">
+            </UploaderAsyncSettings>
+        </SfUploader>
+        <br />
+
+        <EditForm Model="@vm" OnValidSubmit="@PostVenueMedia">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-group">
+                <label class="control-label">
+                    Uploaded File
+                    <InputText class="form-control" @bind-Value="@vm.Url" Placeholder="browse the file first" Readonly=true />
+                </label>
+            </div><br>
+            <div class="form-group">
+                <label class="control-label">
+                    Venue
+                    <InputSelect class="form-control" @bind-Value="VenueId">
+                        @foreach (var v in VenueList)
+                        {
+                            <option value="@v.Id">@v.VenueName</option>
+                        }
+                    </InputSelect>
+                </label>
+            </div>
+            <br/>
+
+            <div class="form-group">
+                <button type="submit" class="btn btn-secondary">Create Venue Media</button>
+            </div>
+        </EditForm>
+        <span>@errorMessage</span>
+    </div>
+</div>
+
+@code
+{ 
+    private string? url { get; set; }
+    private string? Name{ get; set; }
+    private string? ext { get; set; }
+    private int VenueId;
+    private VenueMedia? vm = new VenueMedia();
+    private List<Venue>? VenueList { get; set; }
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            url = Configuration["apiUrl"] + "/api/VenueMedia/upload";
+            VenueList = await Http.GetFromJsonAsync<List<Venue>>("api/Venues");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+
+    protected async Task PostVenueMedia()
+    {
+        try
+        {
+            var SelectedVenue = VenueList.Find(v => v.Id == VenueId);
+            vm.Venue = SelectedVenue;
+            if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif")
+            {
+                vm.Media = VenueMedia.Medias.image;
+            }
+            if(ext == ".mp3")
+            {
+                vm.Media = VenueMedia.Medias.audio;
+            }
+            if (ext == ".mp4")
+            {
+                vm.Media = VenueMedia.Medias.video;
+            }
+            var response = await Http.PostAsJsonAsync("api/VenueMedia", vm);
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = response.ReasonPhrase;
+                return;
+            }
+            NavManager.NavigateTo("/Dashboard/VenueMedias");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+    }
+
+    public void OnFileSelected(SelectedEventArgs args)
+    {
+        foreach (var file in args.FilesData)
+        {
+            ext = Path.GetExtension(file.Name);
+            Guid uuid = Guid.NewGuid();
+            file.Name = uuid.ToString() + ext;
+            vm.Url = "https://calendardbstorage.blob.core.windows.net/media/"+file.Name;
+            if (ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".gif" && ext != ".mp3" && ext != ".mp4")
+            {
+                vm.Url = ""; 
+            }
+        }
+        args.IsModified = true;
+        args.ModifiedFilesData = args.FilesData;
+    }
+}

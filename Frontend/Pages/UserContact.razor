@@ -1,0 +1,126 @@
+﻿@page "/UserContact"
+
+@using System;
+@using System.Collections.Generic;
+@using System.Linq;
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Inputs
+@using System.Security.Claims
+@using System.ComponentModel.DataAnnotations;
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@inject IJSRuntime JSRuntime
+@inject ILocalStorageService LocalStorageService
+@inject AuthenticationStateProvider AuthService
+
+
+<h3>Organizer Contact Info</h3>
+<p>Do you post events on behalf of a promotion company or other organization?</p>
+<br />
+<div class="row">
+    <div class="col-md-6">
+        <EditForm Model="@mdl" OnValidSubmit="@UpdateUser">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-group">
+                <label class="control-label">
+                    What is the name of your organization?
+                    <InputText class="form-control" @bind-Value=@mdl.OrganizationName />
+                </label>
+            </div><br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    What is your contact name, as part of your organization? (ex. your legal name)
+                    <InputText class="form-control" @bind-Value=@mdl.ContactName />
+                </label>
+            </div><br>
+
+            <div class="form-group">
+                <button type="submit" class="btn btn-secondary">Submit</button>
+            </div>
+            <span class="text-danger">@errorMessage</span>
+        </EditForm>
+
+    </div>
+</div>
+
+@code {
+    private AuthenticationState authState;
+    private User currentUser { get; set; }
+    private int userId { get; set; }
+
+    private Model mdl = new Model();
+
+    private class Model
+    {
+        [Required, MinLength(1)]
+        public string ContactName { get; set; }
+
+        [Required, MinLength(1)]
+        public string OrganizationName { get; set; }
+    }
+
+
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            authState = await AuthService.GetAuthenticationStateAsync();
+            var user = authState.User;
+            userId = int.Parse(user.FindFirst(c => c.Type == ClaimTypes.SerialNumber)?.Value);
+            currentUser = await Http.GetFromJsonAsync<User>($"api/Users/{userId}");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+
+
+    protected async Task UpdateUser()
+    {
+        try
+        {
+            currentUser.ContactName = mdl.ContactName;
+            currentUser.OrganizationName = mdl.OrganizationName;
+
+            var responseEvent = await Http.PutAsJsonAsync($"api/Users/{userId}", currentUser);
+            if (!responseEvent.IsSuccessStatusCode)
+            {
+                errorMessage = responseEvent.ReasonPhrase;
+                return;
+            }
+
+            NavManager.NavigateTo("/UserDashboard");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+
+    }
+
+    //public void OnFileSelected(SelectedEventArgs args)
+    //{
+    //    foreach (var file in args.FilesData)
+    //    {
+    //        ext = Path.GetExtension(file.Name);
+    //        Guid uuid = Guid.NewGuid();
+    //        file.Name = uuid.ToString() + ext;
+    //        newEventMedia.Url = "https://calendardbstorage.blob.core.windows.net/media/" + file.Name;
+    //        if (ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".gif" && ext != ".mp3" && ext != ".mp4")
+    //        {
+    //            newEventMedia.Url = "";
+    //        }
+    //    }
+    //    args.IsModified = true;
+    //    args.ModifiedFilesData = args.FilesData;
+    //}
+}

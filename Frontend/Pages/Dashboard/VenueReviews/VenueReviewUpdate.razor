@@ -1,0 +1,101 @@
+﻿@page "/Dashboard/VenueReviewUpdate/{Id:int}"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Venue Review Edit</h3>
+<a href="/Dashboard/VenueReviews">Back to Venue Reviews</a>
+<br />
+<br />
+<div class="row">
+    <div class="col-md-6">
+        <EditForm Model="@vr" OnValidSubmit="@PutVenueReview">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="form-group">
+                <label class="control-label">
+                    Comment
+                    <InputText class="form-control" @bind-Value=@vr.Comment />
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    Venue Id: @vr.Venue.Id<br />
+                    Venue Name: @vr.Venue.VenueName
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    User Id: @vr.User.Id <br />
+                    User: @vr.User.Username
+                </label>
+            </div>
+            <br>
+    
+            <div class="form-group">
+                <button type="submit" class="btn btn-secondary">Edit Venue Review</button>
+            </div>
+            <span>@errorMessage</span>
+        </EditForm>
+    </div>
+</div>
+
+@code
+{
+    private VenueReview? vr { get; set; }
+    private List<Venue>? VenueList { get; set; }
+    private List<User>? UserList { get; set; }
+    private Venue? Venue { get; set; }
+    private User? User { get; set; }
+    [Parameter]
+    public int Id { get; set; }
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            vr = await Http.GetFromJsonAsync<VenueReview>($"api/VenueReviews/{Id}");
+            VenueList = await Http.GetFromJsonAsync<List<Venue>>("api/Venues");
+            UserList = await Http.GetFromJsonAsync<List<User>>("api/Users");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+
+
+    protected async Task PutVenueReview()
+    {
+        try
+        {
+            var SelectedVenue = VenueList.Find(v => v.Id == vr.Venue.Id);
+            var SelectedUser = UserList.Find(u => u.Id == vr.User.Id);
+            vr.Venue = SelectedVenue;
+            vr.User = SelectedUser;
+            var response = await Http.PutAsJsonAsync($"api/VenueReviews/{Id}", vr);
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = response.ReasonPhrase;
+                return;
+            }
+            NavManager.NavigateTo("/Dashboard/VenueReviews");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+
+    }
+}

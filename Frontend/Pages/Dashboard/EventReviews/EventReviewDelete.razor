@@ -1,0 +1,64 @@
+﻿@page "/Dashboard/EventReviewDelete/{Id:int}"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Event Review Delete</h3>
+<a href="/Dashboard/EventReviews">Back to Event Reviews</a>
+<br />
+<div class="row">
+    <div class="col-md-4">
+            <p>
+                Id : @Id<br />
+                Rating: @vr.Rating<br />
+                Comment: @vr.Comment<br />
+                User: @vr.User.Username<br />
+                Event: @vr.Event.EventName<br />
+            </p> 
+    </div>
+        <br />
+        <div class="form-group">
+            <input value="Delete Event Review" class="btn btn-secondary" @onclick="DeleteEventReview" /><br /><br />
+            <span>@errorMessage</span>
+        </div>
+</div>
+
+@code
+{
+    private EventReview? vr { get; set; }
+
+    [Parameter]
+    public int Id { get; set; }
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            vr = await Http.GetFromJsonAsync<EventReview>($"api/EventReviews/{Id}");
+
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+    }
+
+    protected async Task DeleteEventReview()
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"api/EventReviews/{Id}");
+            NavManager.NavigateTo("/Dashboard/EventReviews");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+    }
+}

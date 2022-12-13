@@ -1,0 +1,185 @@
+﻿@page "/Registration"
+@using System.ComponentModel.DataAnnotations
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@inject AuthenticationStateProvider AuthService
+@inject ILocalStorageService LocalStorageService
+
+<div class="register_container bg-gradient">
+    <div class="card-title">
+        <h1 class="p-4">Register Now</h1>
+        
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="alert alert-danger mt-3 mb-0">@error</div>
+        }
+    </div>
+    
+    <div class="form_container p-md-4">
+        <EditForm Model="@mdl" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <InputText @bind-Value="mdl.username" class="form-control"/>
+                <ValidationMessage For="@(() => mdl.username)" />
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email address</label>
+                <InputText @bind-Value="mdl.email" class="form-control" aria-describedby="emailHelp"/>
+                <ValidationMessage For="@(() => mdl.email)" />
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <InputText type="password" @bind-Value="mdl.password" class="form-control"/>
+                <ValidationMessage For="@(() => mdl.password)" />
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Confirm Password</label>
+                <InputText type="password" @bind-Value="mdl.confirmpwd" class="form-control" />
+                <ValidationMessage For="@(() => mdl.confirmpwd)" />
+            </div>
+            <div class="mb-3">
+                <label for="dob" class="form-label">Date of Birth</label>
+                <InputDate @bind-Value="mdl.dob" class="form-control" />
+                <ValidationMessage For="@(() => mdl.dob)" />
+            </div>
+            <div id="org" class="orginizer_container" hidden="@HideSection">
+                <div class="mb-3">
+                    <label for="contactName" class="form-label">Contact Full Name</label>
+                    <InputText @bind-Value="mdl.contactName" class="form-control" />
+                    <ValidationMessage For="@(() => mdl.contactName)" />
+                </div>
+                    <div class="mb-3">
+                        <label for="orgName" class="form-label">Company Name</label>
+                    <InputText @bind-Value="mdl.organizationName" class="form-control" />
+                    <ValidationMessage For="@(() => mdl.organizationName)" />
+                    </div>
+            </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" @onchange="IamOrganizer" id="IamOrg">
+                <label class="form-check-label" for="exampleCheck1">I'm an Organizer</label>
+            </div>
+            <div class="submit p-2">
+                <button type="submit" class="btn m-2 btn-outline-light btn-lg rounded-pill">Register</button>
+                <NavLink href="Login"><div class="btn m-2 btn-outline-light rounded-pill btn-sm">Login if registered before</div></NavLink>
+                
+            </div>
+            
+        </EditForm>
+    </div>
+</div>
+@code {
+    //form
+
+    private Model mdl = new Model();
+    private string error;
+
+    public bool isOrganizer { get; set; } = false;
+
+    private class Model {
+        [Required(ErrorMessage = "Username is required."), MinLength(2)]
+        public string? username { get; set; }
+
+        [Required(ErrorMessage = "Email is required.")]
+        [EmailAddress(ErrorMessage = "Email address is not valid.")]
+        public string? email { get; set; }
+
+        [Required(ErrorMessage = "Password is required.")]
+        [DataType(DataType.Password)]
+        public string? password { get; set; }
+
+        [Required(ErrorMessage = "Confirm password is required.")]
+        [DataType(DataType.Password)]
+        [Compare("password", ErrorMessage = "Password and confirm password do not match.")]
+        public string? confirmpwd { get; set; }
+
+        [Required(ErrorMessage = "Please Enter an appropriate date.")]
+        public DateTimeOffset dob { get; set; } = DateTimeOffset.Now.AddYears(-18);
+
+        //nullable
+        public string? contactName;
+        public string? organizationName;
+
+    }
+    protected override async void OnInitialized()
+    {
+        var state = await AuthService.GetAuthenticationStateAsync();
+        var user = state.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            NavManager.NavigateTo("/");
+        }
+    }
+    protected async Task HandleValidSubmit()
+    {
+        try
+        {
+            if(mdl.username == "")
+            {
+                error = "Missing Fields";
+                StateHasChanged();
+                return;
+            }
+            else
+            {
+                var DoB = mdl.dob.ToUniversalTime();
+                var newUser = new User
+                    {
+                        Username = mdl.username,
+                        Email = mdl.email,
+                        Password = mdl.password,
+                        DOB = DoB,
+                        ContactName = mdl.contactName,
+                        OrganizationName = mdl.organizationName
+                    };
+
+                if (!isOrganizer)
+                {
+                    newUser.ContactName = "";
+                    newUser.OrganizationName = "";
+                }
+
+                using var response = await Http.PostAsJsonAsync("api/Users/register", newUser);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorMessage = response.ReasonPhrase;
+                    error = errorMessage;
+                    Console.WriteLine($"There was an error! {errorMessage}");
+                    return;
+                }
+                else
+                {
+                    //success
+                    using var loginReq = await Http.PostAsJsonAsync("api/Users/login", new { newUser.Username, newUser.Password });
+                    if(loginReq.IsSuccessStatusCode)
+                    {
+                        var jwtToken = await loginReq.Content.ReadAsStringAsync();
+
+                        await LocalStorageService.SetItem("user", jwtToken);
+                        await AuthService.GetAuthenticationStateAsync();
+                        NavManager.NavigateTo("/");
+                    }
+                    
+                }
+            }
+        }
+        catch(Exception ex)
+        {
+            error = ex.Message;
+
+        }
+        finally{
+            StateHasChanged();
+        }
+
+    }
+
+    //features
+    private bool HideSection { get; set; } = true;
+
+    private void IamOrganizer() {
+        HideSection = !HideSection;
+        isOrganizer = !isOrganizer;
+    }
+}

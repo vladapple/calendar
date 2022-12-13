@@ -1,0 +1,73 @@
+﻿@page "/Dashboard/Attendings"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject HttpClient Http
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Attendings</h3>
+<a href="/Dashboard/Index">Back to dashboard</a>
+<div class="text-center">
+    <a href="/Dashboard/AttendingAdd">Add Attending</a>
+</div>
+<br>
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Id</th>
+                        <th scope="col">User Id</th>
+                        <th scope="col">User Name</th>
+                        <th scope="col">Event Id</th>
+                        <th scope="col">Event Name</th>
+                        <th scope="col">Event Starts</th>
+                        <th scope="col">Event Ends</th>
+                        <th scope="col">Venue Name</th>  
+                        <th scope="col">Venue Address</th>
+                        <th scope="col">Links</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in AttendingList)
+                    {
+                        <tr>
+                            <td>@v.Id</td>
+                            <td><a href="/Dashboard/AttendingsByUser/@v.User.Id">@v.User.Id</a></td>
+                            <td><a href="/Dashboard/AttendingsByUser/@v.User.Id">@v.User.Username</a></td>
+                            <td><a href="/Dashboard/AttendingsByEvent/@v.Event.Id">@v.Event.Id</a></td>
+                            <td><a href="/Dashboard/AttendingsByEvent/@v.Event.Id">@v.Event.EventName</a></td>
+                            <td>@v.Event.Start</td>
+                            <td>@v.Event.End</td>
+                            <td>@v.Event.Venue.VenueName</td>
+                            <td>@v.Event.Venue.Address</td>
+                            <td>
+                                <a href="/Dashboard/AttendingDelete/@v.Id"> Delete</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private List<Attending>? AttendingList { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            AttendingList = await Http.GetFromJsonAsync<List<Attending>>("api/Attending");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+}

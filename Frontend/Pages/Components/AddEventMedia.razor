@@ -1,0 +1,150 @@
+﻿@page "/Components/AddEventMedia/{Id:int}"
+@using System;
+@using System.Collections.Generic;
+@using System.Linq;
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Inputs
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject IConfiguration Configuration
+
+<style>
+    #DropArea {
+        padding: 50px 25px;
+        margin: 30px auto;
+        border: 1px solid #c3c3c3;
+        text-align: center;
+        width: 250px;
+        display: inline-flex;
+    }
+</style>
+<div id="events_container" class="container-fluid text-light  rounded bg-gradient mb-4 p-4" style="background-color:#1a1aff;">
+
+<div class="row">
+    <div class="col text-center">
+        <div id="DropArea">Drop files here to upload</div><br />
+
+        <SfUploader AllowMultiple="false" AutoUpload="false"
+                    AllowedExtensions=".jpg, .jpeg, .png, .gif, .mp3, .mp4"
+                    ID="UploadFiles" DropArea="#DropArea" MaxFileSize="5000000">
+            <UploaderEvents FileSelected="OnFileSelected"></UploaderEvents>
+            <UploaderAsyncSettings SaveUrl="@url">
+            </UploaderAsyncSettings>
+        </SfUploader>
+        <br />
+
+        <EditForm Model="@em" OnValidSubmit="@PostEventMedia">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-group">
+                <label class="control-label">
+                    Uploaded File
+                    <InputText class="form-control" @bind-Value="@em.Url" Placeholder="browse the file first" Readonly=true />
+                </label>
+            </div><br>
+            <div class="form-group">
+                <label class="control-label">
+                    Event
+                    <InputSelect class="form-control" @bind-Value="EventId">
+                        @foreach(var e in EventList)
+                        {
+                            <option value="@e.Id">@e.EventName</option>
+                        }
+                    </InputSelect>
+                </label>
+            </div>
+            <br />
+
+            <div class="form-group">
+                <button type="submit" class="btn btn-outline-light btn-lg">Create Event Media</button>
+            </div>
+        </EditForm>
+        <span>@errorMessage</span>
+    </div>
+    <div class="col p-5">
+            <h1><b>Final Step.</b></h1>
+            <br /><h2><b>Add some pictures to make your event more inviting.</b></h2>
+@*        <div class="bg-light img-fluid text-center text-dark rounded">
+           <img src="@em.Url" alt="Preview of your media will appear here"/>
+        </div>*@
+    </div>
+</div>
+</div>
+@code
+{
+    private string? url {get; set;}
+    private string? ext { get; set; }
+    private int EventId;
+    private EventMedia? em = new EventMedia();
+    private List<Event>? EventList { get; set; }
+    [Parameter]
+    public int Id { get; set; }
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            url = Configuration["apiUrl"] + "/api/VenueMedia/upload";
+            EventList = await Http.GetFromJsonAsync<List<Event>>($"api/Events/user/{Id}");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+
+    protected async Task PostEventMedia()
+    {
+        try
+        {
+            var SelectedEvent = EventList.Find(e => e.Id == EventId);
+            em.Event = SelectedEvent;
+            if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif")
+            {
+                em.Media = EventMedia.Medias.image;
+            }
+            if (ext == ".mp3")
+            {
+                em.Media = EventMedia.Medias.audio;
+            }
+            if (ext == ".mp4")
+            {
+                em.Media = EventMedia.Medias.video;
+            }
+            var response = await Http.PostAsJsonAsync("api/EventMedia", em);
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = response.ReasonPhrase;
+                return;
+            }
+            NavManager.NavigateTo("../");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+    }
+
+    public void OnFileSelected(SelectedEventArgs args)
+    {
+        foreach (var file in args.FilesData)
+        {
+            ext = Path.GetExtension(file.Name);
+            Guid uuid = Guid.NewGuid();
+            file.Name = uuid.ToString() + ext;
+            em.Url = "https://calendardbstorage.blob.core.windows.net/media/" + file.Name;
+            if (ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".gif" && ext != ".mp3" && ext != ".mp4")
+            {
+                em.Url = "";
+            }
+        }
+        args.IsModified = true;
+        args.ModifiedFilesData = args.FilesData;
+    }
+}

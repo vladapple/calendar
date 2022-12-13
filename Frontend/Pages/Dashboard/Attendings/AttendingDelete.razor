@@ -1,0 +1,63 @@
+﻿@page "/Dashboard/AttendingDelete/{Id:int}"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Attending Delete</h3>
+<a href="/Dashboard/Attendings">Back to Attendings</a>
+<br />
+<div class="row">
+    <div class="col-md-4">
+            <p>
+                Id : @Id<br />
+                Username: @a.User.Username<br />
+                Event Name: @a.Event.EventName<br />
+                Venue Name: @a.Event.Venue.VenueName<br />
+            </p> 
+    </div>
+        <br />
+        <div class="form-group">
+        <input value="Delete Attending" class="btn btn-secondary" @onclick="DeleteAttending" /><br /><br />
+            <span>@errorMessage</span>
+        </div>
+</div>
+
+@code
+{
+    private Attending? a { get; set; }
+
+    [Parameter]
+    public int Id { get; set; }
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            a = await Http.GetFromJsonAsync<Attending>($"api/Attending/{Id}");
+
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+    }
+
+    protected async Task DeleteAttending()
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"api/Attending/{Id}");
+            NavManager.NavigateTo("/Dashboard/Attendings");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+    }
+}

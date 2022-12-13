@@ -1,0 +1,220 @@
+﻿@using System;
+@using System.Collections.Generic;
+@using System.Linq;
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Inputs
+@using System.Security.Claims
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@inject IJSRuntime JSRuntime
+@inject ILocalStorageService LocalStorageService
+@inject AuthenticationStateProvider AuthService
+
+
+<div class="container-fluid p-2">
+<h1><b>Step 1. Create Event</b></h1>
+<div class="container-fluid">
+<div class="row pt-4">
+    <div class="col">
+        <EditForm Model="@newEvent" OnValidSubmit="@PostEvent">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div class="form-group">
+                <label class="control-label">
+                    Name of Event
+                    <InputText class="form-control" @bind-Value=@newEvent.EventName />
+                </label>
+            </div><br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    Tell us more about your event (2000 characters)
+                    <InputTextArea class="form-control" @bind-Value=@newEvent.Descr />
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    Start Time
+                    <InputDate Type=InputDateType.DateTimeLocal class="form-control" @bind-Value=@newEvent.Start />
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    End Time
+                    <InputDate Type=InputDateType.DateTimeLocal class="form-control" @bind-Value=@newEvent.End />
+                </label>
+            </div>
+            <br>
+
+            <div class="col-md-12">
+                <label class="control-label">Age Restricted (18+)</label>&nbsp;
+                <InputCheckbox @bind-Value=@newEvent.AgeRestricted />
+                &nbsp;&nbsp;&nbsp;&nbsp;
+            </div>
+            <br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    Ticket Price
+                    <InputNumber class="form-control" @bind-Value=@newEvent.TicketPrice />
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    What type of event?
+                    <InputSelect class="form-control" @bind-Value="CategoryId">
+                        <option value="-1" disabled>--Select--</option>
+                        @foreach (var ec in EventCategoryList)
+                        {
+                            <option value="@ec.Id">@ec.CategoryName</option>
+                        }
+                    </InputSelect>
+                </label>
+            </div>
+            <br>
+            <div class="form-group">
+                <label class="control-label">
+                    Where is the event happening?
+                    <InputSelect class="form-control" @bind-Value="VenueId">
+                        <option value="-1" disabled>--Select--</option>
+                        @foreach (var v in VenueList)
+                        {
+                            <option value="@v.Id">@v.VenueName</option>
+                        }
+                    </InputSelect>
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                        <button type="submit" class="btn btn-outline-light btn-lg">Create Event</button>
+            </div>
+            <span class="text-danger">@errorMessage</span>
+        </EditForm>   
+
+    </div>
+    <div class="col p-4 m-4 pb-4 bg-light text-dark">
+        <h1>Event Preview</h1>
+                <label>Name of Event: <b>@newEvent.EventName</b></label>
+        <hr />
+        <label>Description:</label>
+                <div class="container" style="overflow:scroll;max-height:20vh;">
+                    <label><b>@newEvent.Descr</b></label>
+                </div>
+                <hr />
+                <label>Event starts at: <b>@newEvent.Start.ToLongTimeString() @newEvent.Start.ToLongDateString()</b></label>
+                <br />
+                <label>Event starts at: <b>@newEvent.End.ToLongTimeString() @newEvent.End.ToLongDateString()</b></label>
+                <hr />
+                <label>Age Restricted? <b>@newEvent.AgeRestricted</b></label>
+                <br />
+                <label>Ticket price: <b>@newEvent.TicketPrice</b></label>
+                <br />
+                <hr />
+                <label class="text-center pt-4"><b>Please make sure the event category and the venue are correct.</b></label>
+@*                <label>Event Category: <b>@newEvent.EventCategory.CategoryName</b></label>
+                <br />
+                <label>Venue: <b>@newEvent.Venue.VenueName</b><br />
+                    Location: <b>@newEvent.Venue.Address</b></label>*@
+                    
+    </div>
+
+    </div>
+    </div>
+</div>
+
+@code {
+
+    private Event? newEvent = new Event();
+
+    private AuthenticationState? authState;
+
+    private User? currentUser { get; set; }
+    private int userId { get; set; }
+
+    
+
+
+    private List<Venue>? VenueList { get; set; }
+    //private Venue? Venue { get; set; }
+    private int VenueId = -1;
+
+    private List<EventCategory>? EventCategoryList { get; set; }
+    //private EventCategory? EventCategory { get; set; }
+    private int CategoryId = -1;
+
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            authState = await AuthService.GetAuthenticationStateAsync();
+            var user = authState.User;
+            userId = int.Parse(user.FindFirst(c => c.Type == ClaimTypes.SerialNumber)?.Value);
+            currentUser = await Http.GetFromJsonAsync<User>($"api/Users/{userId}");
+
+            EventCategoryList = await Http.GetFromJsonAsync<List<EventCategory>>("api/EventCategories");
+            VenueList = await Http.GetFromJsonAsync<List<Venue>>("api/Venues");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+
+
+    protected async Task PostEvent()
+    {
+        try
+        {
+            if (newEvent.Start < DateTime.Now || newEvent.End < DateTime.Now)
+            {
+                errorMessage = "Event must be upcoming";
+                return;
+            }
+            if (newEvent.Start >= newEvent.End)
+            {
+                errorMessage = "Start Time cannot occur after End Time";
+                return;
+            }
+
+            var SelectedEventCategory = EventCategoryList.Find(e => e.Id == CategoryId);
+            var SelectedVenue = VenueList.Find(e => e.Id == VenueId);
+            var UserId = userId; //parameter transferred to media add page
+
+            newEvent.EventCategory = SelectedEventCategory;
+            newEvent.Venue = SelectedVenue;
+            newEvent.User = currentUser;
+
+            newEvent.Start = newEvent.Start.ToUniversalTime();
+            newEvent.End = newEvent.End.ToUniversalTime();
+            newEvent.ApprovalStatus = Event.Approvals.pending;
+            newEvent.CurrentStatus = Event.Current.upcoming;
+
+            var responseEvent = await Http.PostAsJsonAsync("api/Events", newEvent);
+            if (!responseEvent.IsSuccessStatusCode)
+            {
+                errorMessage = responseEvent.ReasonPhrase;
+                return;
+            }
+
+            NavManager.NavigateTo($"/Components/AddEventMedia/{UserId}");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+
+    }
+}

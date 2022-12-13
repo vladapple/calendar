@@ -1,0 +1,78 @@
+﻿@page "/Dashboard/EventCategoryUpdate/{Id:int}"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@attribute [Authorize(Roles = "admin")]
+
+<h3>Event Category Edit</h3>
+<a href="/Dashboard/EventCategories">Back to Event Categories</a><br />
+<div class="row">
+    <div class="col-md-4">
+            <div class="form-group">
+                <label class="control-label">ID</label>
+                <input type="text" class="form-control" @bind-value=@Id readonly />
+            </div>
+            <br>
+            <div class="form-group">
+                <label class="control-label">Category Name</label>
+            <input type="text" class="form-control" @bind-value=@EC.CategoryName required />
+            </div><br>
+
+            <div class="form-group">
+                <label class="control-label">Description</label>
+            <input type="text" class="form-control" @bind-value=@EC.Descr required />
+            </div>
+            <br>
+
+            <div class="form-group">
+            <input value="Edit Category" class="btn btn-secondary" @onclick="PutEventCategory" /><br /><br />
+            <span>@errorMessage</span>
+            </div>
+    </div>
+</div>
+
+@code
+{
+    private EventCategory? EC { get; set; }
+
+    [Parameter]
+    public int Id { get; set; }
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            EC = await Http.GetFromJsonAsync<EventCategory>($"api/EventCategories/{Id}");
+
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+    }
+
+    protected async Task PutEventCategory()
+    {
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"api/EventCategories/{Id}", EC);
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = response.ReasonPhrase;
+                return;
+            }
+            NavManager.NavigateTo("/Dashboard/EventCategories");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+
+
+    }
+}

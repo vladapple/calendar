@@ -1,0 +1,98 @@
+﻿@page "/login"
+@using System.IdentityModel.Tokens.Jwt
+@using System.ComponentModel.DataAnnotations
+@using System.Security.Claims
+@using System.Text.Json.Nodes
+@inject NavigationManager NavigationManager
+@inject HttpClient Http
+@inject IJSRuntime jsr
+@inject ILocalStorageService LocalStorageService
+@inject AuthenticationStateProvider AuthService
+
+<div class="login_container bg-gradient rounded text-light pt-2" style="background-color:#1a1aff">
+    <h1 class="container p-2 pt-2">Login</h1>
+    <EditForm Model="@model" OnValidSubmit="HandleValidSubmit" class="form-floating p-md-4">
+        <DataAnnotationsValidator/>
+        <div class="mb-3">
+            <label for="email" class="form-label">Username</label>
+            <InputText @bind-Value="model.Username" class="form-control" />
+                <ValidationMessage For="@(() => model.Username)" />
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <InputText @bind-Value="model.Password" type="password" class="form-control" />
+            <ValidationMessage For="@(() => model.Password)" />
+        </div>
+        <div class="submit p-2">
+            <button type="submit" class="btn m-2 btn-outline-light btn-lg rounded-pill">
+                @if (loading)
+                {
+                    <span class="spinner-border spinner-border-sm mr-1"></span>
+                }
+                Login
+            </button>
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <div class="alert alert-danger mt-3 mb-0">@error</div>
+            }
+            <NavLink href="Registration"><div class="btn m-2 btn-outline-light rounded-pill btn-sm">First time here? Click here to register</div></NavLink>
+        </div>
+        
+    </EditForm>
+</div>
+@code {
+    private Model model = new Model();
+    private bool loading;
+    private string? error;
+
+    protected override async void OnInitialized()
+    {
+        var state = await AuthService.GetAuthenticationStateAsync();
+        var user = state.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+    }
+
+
+    private async void HandleValidSubmit()
+    {
+        using (var msg = await Http.PostAsJsonAsync<Model>("/api/Users/login", model, System.Threading.CancellationToken.None))
+        {
+            try{
+                if (msg.IsSuccessStatusCode)
+                {       
+                    var jwtToken = await msg.Content.ReadAsStringAsync();
+
+                    await LocalStorageService.SetItem("user", jwtToken);
+                    await AuthService.GetAuthenticationStateAsync();
+
+                    NavigationManager.NavigateTo("/");
+                }
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                loading = false;
+                StateHasChanged();
+            }
+            finally
+            {
+                error = "Username or Password Invalid.";
+                
+                StateHasChanged();
+            }
+        }
+    }
+
+    private class Model
+    {
+        [Required]
+        public string Username { get; set; }
+        [Required]
+        public string Password { get; set; }
+    }
+
+}

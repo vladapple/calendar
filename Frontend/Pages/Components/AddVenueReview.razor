@@ -1,0 +1,133 @@
+﻿@page "/Components/AddVenueReview/{venueId:int}"
+
+@using System;
+@using System.Collections.Generic;
+@using System.Linq;
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Inputs
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+@if (alreadyExists)
+{
+        <h3>You have already reviewed this venue</h3>
+}
+else
+{
+       <h3>Post a review for @selectedVenue.VenueName</h3>
+    <br />
+    <div class="row">
+        <div class="col-md-6">
+            <EditForm Model="@vr" OnValidSubmit="@PostVenueReview">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                @*<div class="form-group">
+                <label class="control-label">
+                    How would you rate this event? (1-5)
+                    <InputNumber class="form-control" @bind-Value=@er.Rating />
+                </label>
+            </div><br>*@
+
+                <div class="form-group">
+                    <label class="control-label">
+                        How would you rate this venue? (1-5)
+                    </label>
+                    <SfSlider Min="1" Max="5" @bind-Value="@vr.Rating">
+                        <SliderTooltip IsVisible="true" ShowOn="TooltipShowOn.Always" Format="" Placement="TooltipPlacement.Before"></SliderTooltip>
+                        <SliderTicks Placement="Placement.Before" Format="" ShowSmallTicks="true" LargeStep="1" SmallStep="1"></SliderTicks>
+                    </SfSlider>
+                </div><br>
+
+                <div class="form-group">
+                    <label class="control-label">
+                        Leave a comment about your rating (2000 characters, optional)
+                        <InputTextArea class="form-control" @bind-Value=@vr.Comment />
+                    </label>
+                </div>
+                <br>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-secondary">Post Review</button>
+                </div>
+                <span class="text-danger">@errorMessage</span>
+            </EditForm>
+        </div>
+    </div> 
+}
+
+
+@code {
+
+    private VenueReview? vr = new VenueReview();
+
+    [Parameter]
+    public int venueId { get; set; }
+    private Venue? selectedVenue { get; set; }
+
+    private int userId { get; set; } = 1; //hardcoded for testing
+    private User? currentUser { get; set; }
+
+    private int StarRating { get; set; }
+
+    private string? errorMessage;
+
+    private bool alreadyExists = false;
+
+    //private int rating { get; set; }
+    //private string comment { get; set; }
+    //private DateTime dateTime { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            selectedVenue = await Http.GetFromJsonAsync<Venue>($"api/Venues/{venueId}");
+            currentUser = await Http.GetFromJsonAsync<User>($"api/Users/{userId}");
+
+            var userReviews = await Http.GetFromJsonAsync<List<VenueReview>>($"api/VenueReviews/user/{userId}");
+            var review = userReviews.FirstOrDefault(r => r.Venue.Id == venueId);
+            if (review != null)
+            {
+                alreadyExists = true;
+            }
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+
+    protected async Task PostVenueReview()
+    {
+        try
+        {
+            vr.DateTime = DateTime.UtcNow;
+            vr.Venue = await Http.GetFromJsonAsync<Venue>($"api/Venues/{venueId}");
+            vr.User = await Http.GetFromJsonAsync<User>($"api/Users/{userId}");
+
+            if (vr.Comment == "")
+            {
+                vr.Comment = null;
+            }
+
+            var response = await Http.PostAsJsonAsync("api/VenueReviews", vr);
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = response.ReasonPhrase;
+                return;
+            }
+
+            NavManager.NavigateTo("/");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+
+    }
+}

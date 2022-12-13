@@ -1,0 +1,64 @@
+﻿.date_btns {
+    background: transparent;
+    border-radius: 50px;
+    margin-right: 2rem;
+    border: 1px solid #1a1aff;
+    color: #1a1aff;
+    padding: .5rem;
+    display: block;
+    transition: 0.3s;
+}
+/*.date_btns {
+    background: transparent;
+    border-radius: 50px;
+    margin-right: 2rem;
+    border: 1px solid #1a1aff;
+    color: #1a1aff;
+    padding: .5rem;
+    display: block;
+    transition: 0.3s;
+}*/
+
+    .date_btns:has(:hover) {
+        background: #1a1aff;
+        border-radius: 50px;
+        margin-right: 2rem;
+        border: none;
+        color: #Fff;
+        padding: .5rem;
+        display: block;
+        transition: 0.3s;
+    }
+
+    .date_btns:is(:hover) {
+        background: #1a1aff;
+        border-radius: 50px;
+        margin-right: 2rem;
+        border: none;
+        color: #Fff;
+        padding: .5rem;
+        display: block;
+        transition: 0.3s;
+    }
+
+    .date_btns::after {
+        background: #1a1aff;
+        border-radius: 50px;
+        margin-right: 2rem;
+        border: none;
+        color: #Fff;
+        padding: .5rem;
+        display: block;
+        transition: 0.3s;
+    }
+
+    .date_btns:active {
+        background: #1a1aff;
+        border-radius: 50px;
+        margin-right: 2rem;
+        border: none;
+        color: #Fff;
+        padding: .5rem;
+        display: block;
+        transition: 0.3s;
+    }

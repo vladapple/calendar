@@ -1,0 +1,100 @@
+﻿@page "/Dashboard/AttendingAdd/"
+
+@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject NavigationManager NavManager
+@inject HttpClient Http
+@attribute [Authorize (Roles = "admin")]
+
+<h3>Attending Create</h3>
+<a href="/Dashboard/Attendings">Back to Attendings</a>
+<br />
+<br />
+<div class="row">
+    <div class="col-md-6">
+        <EditForm Model="@vr" OnValidSubmit="@PostAttending">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="form-group">
+                <label class="control-label">
+                    Event
+                    <InputSelect class="form-control" @bind-Value="EventId">
+                        @foreach (var e in EventList)
+                        {
+                            <option value = "@e.Id">@e.EventName</option>
+                        }
+                    </InputSelect>
+                </label>
+            </div>
+            <br>
+
+            <div class="form-group">
+                <label class="control-label">
+                    User
+                    <InputSelect class="form-control" @bind-Value="UserId">
+                        @foreach (var u in UserList)
+                        {
+                            <option value="@u.Id">@u.Username</option>
+                        }
+                    </InputSelect>
+                </label>
+            </div>
+            <br>
+    
+            <div class="form-group">
+                <button type="submit" class="btn btn-secondary">Create Attending</button>
+            </div>
+            <span>@errorMessage</span>
+        </EditForm>
+    </div>
+</div>
+
+@code
+{
+    private Attending? vr = new Attending();
+    private List<Event>? EventList { get; set; }
+    private List<User>? UserList { get; set; }
+    private int EventId;
+    private int UserId;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            EventList = await Http.GetFromJsonAsync<List<Event>>("api/Events");
+            UserList = await Http.GetFromJsonAsync<List<User>>("api/Users");
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+    }
+
+
+    protected async Task PostAttending()
+    {
+        try
+        {
+            var SelectedEvent = EventList.Find(e => e.Id == EventId);
+            var SelectedUser = UserList.Find(u => u.Id == UserId);
+            vr.Event = SelectedEvent;
+            vr.User = SelectedUser;
+            var response = await Http.PostAsJsonAsync("api/Attending", vr);
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = response.ReasonPhrase;
+                return;
+            }
+            NavManager.NavigateTo("/Dashboard/Attendings");
+        }
+        catch (Exception e)
+        {
+            Console.Write(e);
+        }
+
+    }
+}

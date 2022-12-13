@@ -1,0 +1,172 @@
+﻿@using Frontend.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@using System.Threading.Tasks
+@inject HttpClient Http
+
+
+<h3 class="mb-4">Add Venue</h3>
+
+<form class="row g-3">
+
+    <div class="col-md-5">
+        <label class="form-label">Venue Name</label>
+        <input type="text" @bind="VenueName" class="form-control" placeholder="Bell Center" required>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Capacity</label>
+        <input type="text" @bind="Capacity" class="form-control" placeholder="5500" required>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Coordinates (Lat)</label>
+        <input type="text" @bind="Lat" class="form-control" placeholder="lets use the api and have it load... " required>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Coordinates (Long)</label>
+        <input type="text" @bind="Long" class="form-control" placeholder="...when user enters addy!" required>
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">Venue Type</label>
+        <select class="form-select" @bind="SelCategoryName" required>
+            <option selected>Choose...</option>
+            @foreach(var type in VCList)
+            {
+                <option >@type.CategoryName</option>
+            }
+        </select>
+    </div>
+
+    <div class="col-md-8">
+        <label for="inputAddress" class="form-label">Address</label>
+        <input type="text" @bind="Addy" class="form-control" placeholder="1234 Main St" required>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">City</label>
+        <input type="text" @bind="City" class="form-control" placeholder="Montreal" required>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Province</label>
+        <select @bind="Province" class="form-select" required>
+            <option selected>Choose...</option>
+            <option>AB</option>
+            <option>NL</option>
+            <option>PE</option>
+            <option>NS</option>
+            <option>NB</option>
+            <option>QC</option>
+            <option>MB</option>
+            <option>SK</option>
+            <option>ON</option>
+            <option>BC</option>
+            <option>YT</option>
+            <option>NT</option>
+            <option>NU</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label">Postal Code</label>
+        <input type="text" @bind="PostalCode" class="form-control" required>
+    </div>
+    <div class="col-md-3">
+        <label>Accessibility friendly</label>
+        <input type="checkbox" @bind="WheelchairAccess"/>
+    </div>
+    <div class="col-md-3">
+        <label>Offer/allow food and beverage</label>
+        <input type="checkbox" @bind="Food" />
+    </div>
+    <div class="col-md-3">
+        <label>Offer/tolerate alchohol use</label>
+        <input type="checkbox" @bind="Drink" />
+    </div>
+
+    <div class="col-12">
+        <button type="button" uiactions="valuechange" @onclick="PostVenue" class="btn btn-primary">Submit</button>
+        <AddVenueCategory/>
+    </div>
+</form>
+@code {
+
+
+
+    private new Venue newVenue;
+    private new Venue lastVenue;
+    private List<VenueCategory>? VCList;
+    private List<Venue>? VenueList;
+
+    //Does not like it when we call newVenue.VenueAttribute, things get glitchy
+    private string? VenueName;
+    private string? Capacity;
+    private string? Addy;
+    private string? City;
+    private string? Province;
+    private string? PostalCode;
+    private string? Lat;
+    private string? Long;
+    private bool WheelchairAccess;
+    private bool Food;
+    private bool Drink;
+    private string? SelCategoryName;
+
+
+    protected async Task PostVenue()
+    {
+        try
+        {
+            var selectedCategory =  VCList.Find(x => x.CategoryName == SelCategoryName);
+
+            string ToStringAddy = Addy + ", " + City + ", " + Province + ", " + PostalCode + ".";
+            var addy = ToStringAddy.ToString();
+            string ToStringLatLong = Lat+", "+Long;
+            var latLong = ToStringLatLong.ToString();
+            var addVenue = new Venue
+                {
+                            VenueName = VenueName,
+                            Address = addy,
+                            Coordinates = latLong,
+                            Capacity = Convert.ToInt32(Capacity),
+                            WheelchairAccess = WheelchairAccess,
+                            Food = Food,
+                            Drink = Drink,
+                            VenueCategory = selectedCategory
+                        };
+            using var response = await Http.PostAsJsonAsync("api/Venues", addVenue);
+            if (!response.IsSuccessStatusCode)
+            {
+                // set error message for display, log to console and return
+                var errorMessage = response.ReasonPhrase;
+                Console.WriteLine($"There was an error! {errorMessage}");
+                return;
+            }
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            VCList = await Http.GetFromJsonAsync<List<VenueCategory>>("api/VenueCategories");
+            VenueList = await Http.GetFromJsonAsync<List<Venue>>("api/Venues");
+
+        }
+        catch (NullReferenceException)
+        {
+            throw;
+        }
+        finally
+        {
+            //lastVenue = VenueList.LastOrDefault();
+            //lastVenue.Id = LastId;
+        }
+    }
+}
